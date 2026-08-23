@@ -1293,8 +1293,8 @@ export default function KnowledgeBaseDetailPage(
     setUploadProgress(0);
 
     try {
-      
-      const API_PREFIX = process.env.NEXT_PUBLIC_DEVELOP_MODE === "true" ? "/api" : "/v1";
+
+      const API_PREFIX = "/api";
       console.log("upload backend prefix: ", API_PREFIX);
 
       
@@ -1472,9 +1472,9 @@ export default function KnowledgeBaseDetailPage(
     setUploadStep('parsing');
 
     try {
-      const API_PREFIX = process.env.NEXT_PUBLIC_DEVELOP_MODE === "true" ? "/api" : "/v1";
-      
-      
+      const API_PREFIX = "/api";
+
+
       const requestBody: any = {
         files: uploadedFiles.map(f => ({
           file_name: f.file_name,
