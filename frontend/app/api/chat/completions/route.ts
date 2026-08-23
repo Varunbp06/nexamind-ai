@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8682";
 
+export const maxDuration = 300;
+
 const LLM_BASE_URL = process.env.LLM_BASE_URL || 'https://integrate.api.nvidia.com/v1';
 
 function standalone(): boolean {

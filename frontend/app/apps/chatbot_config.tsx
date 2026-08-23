@@ -138,7 +138,7 @@ const ToggleRow: FC<{
       <span className="text-[13px] font-medium truncate">{title}</span>
       {hint && <span className="text-[11px] text-muted-foreground truncate">{hint}</span>}
     </div>
-    <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+    <Switch id={id} aria-label={title} checked={checked} onCheckedChange={onCheckedChange} />
   </div>
 );
 
