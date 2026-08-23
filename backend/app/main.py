@@ -112,6 +112,13 @@ def create_app():
         allow_headers=["*"],
         allow_credentials=False,
     )
+    # Shared-secret guard: enforced only when INTERNAL_API_TOKEN is set, so
+    # the publicly hosted backend rejects direct third-party calls while the
+    # frontend proxy (which holds the same secret) keeps working.
+    if os.getenv("INTERNAL_API_TOKEN"):
+        from app.internal_token_middleware import InternalTokenMiddleware
+
+        app.add_middleware(InternalTokenMiddleware)
     # Add I18n middleware to handle Accept-Language header
     app.add_middleware(I18nMiddleware)
     app.add_middleware(CustomLoggingMiddleware)

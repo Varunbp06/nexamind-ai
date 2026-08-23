@@ -1,0 +1,24 @@
+# Render Blueprint — NexaMind AI backend
+# Deploys the FastAPI service (with embedded Chroma, Redis and Celery worker)
+# from Dockerfile.api. One-click via "New +" > "Blueprint" in Render.
+services:
+  - type: web
+    name: nexamind-ai-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile.api
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Comma-separated list of browser origins allowed to talk to this API.
+      # Set to your final Vercel URL(s), e.g. https://nexamind-ai.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false
+      # Shared secret required on every API call (sent by the Vercel proxy).
+      # Render generates a strong random value; copy it into the matching
+      # INTERNAL_API_TOKEN variable on Vercel. Exempts /health, /docs only.
+      - key: INTERNAL_API_TOKEN
+        generateValue: true
+      # Optional: backend-side LLM/embedding providers can be configured from
+      # the admin UI (stored in DB). Leave unset unless pre-seeding via env.

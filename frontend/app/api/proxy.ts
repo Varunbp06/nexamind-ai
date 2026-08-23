@@ -44,11 +44,18 @@ export async function proxyRequest(request: NextRequest) {
 
   const method = request.method;
   let headers = new Headers(request.headers);
-  
+
   headers.delete('host');
   headers.delete('connection');
   headers.delete('content-length');
   headers.delete('cookie');
+
+  // Authenticate this server-to-server call when the backend is deployed
+  // publicly behind the shared-secret guard (INTERNAL_API_TOKEN).
+  const internalToken = process.env.INTERNAL_API_TOKEN;
+  if (internalToken) {
+    headers.set('x-internal-token', internalToken);
+  }
 
   let body;
   const contentType = headers.get('content-type');

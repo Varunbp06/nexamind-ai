@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
 const GENERAL_LIMIT = parseInt(
   process.env.RATE_LIMIT_GENERAL_PER_MIN || '240',
@@ -55,11 +56,44 @@ function sameOrigin(req: NextRequest): boolean {
   }
 }
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const method = req.method.toUpperCase();
   const isApi = pathname.startsWith('/api/');
   const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+
+  // Admin gate for /config pages — active only when real SSO is configured,
+  // because then sessions are NextAuth JWTs we can verify here. When SSO is
+  // not configured (demo/local mode with localStorage sign-in) behavior is
+  // unchanged. When enforcing: any authenticated user passes unless
+  // ADMIN_EMAILS is set, in which case only those addresses may proceed.
+  if (pathname === '/config' || pathname.startsWith('/config/')) {
+    const ssoEnabled = Boolean(
+      (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) ||
+        (process.env.GITHUB_ID && process.env.GITHUB_SECRET),
+    );
+    if (ssoEnabled) {
+      const token = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      if (!token) {
+        const login = new URL('/login', req.url);
+        login.searchParams.set('callbackUrl', pathname);
+        return NextResponse.redirect(login);
+      }
+      const allowList = (process.env.ADMIN_EMAILS || '')
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+      if (
+        allowList.length > 0 &&
+        !allowList.includes(String(token.email || '').toLowerCase())
+      ) {
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+    }
+  }
 
   // CSRF / origin validation for state-changing requests
   if (mutating && !sameOrigin(req)) {

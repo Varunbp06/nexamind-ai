@@ -93,6 +93,11 @@ export async function POST(request: NextRequest) {
   headers.delete('connection');
   headers.delete('content-length');
 
+  const internalToken = process.env.INTERNAL_API_TOKEN;
+  if (internalToken) {
+    headers.set('x-internal-token', internalToken);
+  }
+
   const timeoutMs = parseInt(process.env.CHAT_TIMEOUT_MS || '600000', 10);
   const controller = new AbortController();
   let timeoutId: NodeJS.Timeout | null = null;
