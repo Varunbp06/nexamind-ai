@@ -43,6 +43,22 @@
 Optional tuning: `RATE_LIMIT_CHAT_PER_MIN`, `RATE_LIMIT_GENERAL_PER_MIN`,
 `PROXY_MAX_BODY_BYTES`, `PROXY_TIMEOUT_MS`, `CHAT_TIMEOUT_MS`, `LLM_MAX_TOKENS_CAP`.
 
+### Backend environment variables
+
+| Variable | Purpose |
+|---|---|
+| `ALLOWED_ORIGINS` | Comma-separated origins allowed to call the backend directly via CORS. Default `*` (dev). **Set to your Vercel domain in production**, e.g. `https://your-app.vercel.app`. Unused in the default architecture (all browser traffic flows same-origin through the Next.js `/api/*` proxy), but enforced if you enable direct browser→backend calls. |
+
+### Upload size note (Vercel platform limit)
+
+Vercel serverless functions accept request bodies up to **4.5 MB**. File
+uploads travel through the Next.js `/api/*` proxy, so documents larger than
+4.5 MB will be rejected on Vercel regardless of `PROXY_MAX_BODY_BYTES`. For
+large-document workflows, either upload directly against the deployed backend
+(requires adding its origin to `ALLOWED_ORIGINS`) or keep heavy ingestion on
+the backend host. Chat streaming is unaffected (responses stream out, and
+`maxDuration = 300` is already set).
+
 ### SSO behavior
 
 - If `GOOGLE_CLIENT_*` / `GITHUB_*` variables are set, login/signup buttons run

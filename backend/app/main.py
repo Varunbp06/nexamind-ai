@@ -103,7 +103,11 @@ def create_app():
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[
+            o.strip()
+            for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")
+            if o.strip()
+        ],
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=False,
