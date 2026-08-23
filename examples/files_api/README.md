@@ -63,7 +63,7 @@ export TENANT=demo-tenant
 
 ```bash
 # Upload
-echo "Hello from PAI-RAG. This is a small text note." > /tmp/note.txt
+echo "Hello from NexaMind AI. This is a small text note." > /tmp/note.txt
 
 resp=$(curl -s -X POST "$API/v1/files" \
   -H "X-TENANT-ID: $TENANT" \

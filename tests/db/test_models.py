@@ -12,7 +12,7 @@ class TestThreadEntity:
         from db.models.thread import ThreadEntity
         t = ThreadEntity()
         assert t.id is not None
-        assert t.user_id == "PAI-RAG Assistant"
+        assert t.user_id == "NexaMind AI Assistant"
         assert isinstance(t.created_at, datetime)
         assert isinstance(t.updated_at, datetime)
 

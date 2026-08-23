@@ -302,7 +302,7 @@ class AgentService:
             )
         if video_ids:
             # Videos ride as base64 data URIs too — the format verified on
-            # the PAI-RAG feature branch and compatible with dashscope's
+            # the feature branch and compatible with dashscope's
             # OpenAI-shim video_url shorthand. Keeps local dev working
             # without requiring an externally-reachable OSS endpoint.
             video_base64_list = await file_service.get_file_base64_list(

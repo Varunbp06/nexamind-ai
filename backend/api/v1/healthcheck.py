@@ -25,6 +25,6 @@ async def health_check():
         data=HealthCheck(
             status="healthy",
             timestamp=time.time(),
-            service="PAI-RAG"
+            service="NexaMind AI"
         ),
         message="Health check success!")

@@ -8,7 +8,7 @@ from typing import Optional
 
 
 class ThreadCreate(SQLModel):
-    user_id: str = Field(default="PAI-RAG Assistant")
+    user_id: str = Field(default="NexaMind AI Assistant")
     title: str = Field(default=None, sa_column=Column(Text))
 
 class ThreadRead(ThreadCreate):
@@ -20,7 +20,7 @@ class ThreadEntity(SQLModel, table=True):
     __tablename__ = "pai_thread"
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4().hex), primary_key=True)
-    user_id: str = Field(default="PAI-RAG Assistant", nullable=False)
+    user_id: str = Field(default="NexaMind AI Assistant", nullable=False)
     title: str = Field(default=None, sa_column=Column(Text))
     tenant_id: Optional[str] = Field(default=DEFAULT_TENANT_ID)
 

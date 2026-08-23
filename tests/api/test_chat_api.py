@@ -1,4 +1,4 @@
-"""Chat API Tests based on PAI-RAG API documentation.
+"""Chat API Tests for the NexaMind AI backend.
 Reference: https://help.aliyun.com/zh/pai/use-cases/rag-api-interface-for-v0-4-x
 """
 import os
@@ -41,7 +41,7 @@ class TestChatAPI:
             "messages": [
                 {
                     "role": "user",
-                    "content": "PAI-RAG 有哪些核心功能？"
+                    "content": "NexaMind AI 有哪些核心功能？"
                 }
             ],
             "stream": True

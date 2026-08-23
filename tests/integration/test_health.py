@@ -23,4 +23,4 @@ class TestHealthCheck:
         assert "code" in data
         assert "data" in data
         assert "status" in data["data"]
-        assert data["data"]["service"] == "PAI-RAG"
+        assert data["data"]["service"] == "NexaMind AI"

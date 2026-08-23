@@ -1,5 +1,5 @@
 # ==============================================================================
-# PAI-RAG API-only Image (Backend only, no frontend)
+# NexaMind AI API-only Image (Backend only, no frontend)
 # Requires base image with models: mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag-base:latest
 # ==============================================================================
 

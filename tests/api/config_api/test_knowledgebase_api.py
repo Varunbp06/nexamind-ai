@@ -1,4 +1,4 @@
-"""Knowledgebase API Tests based on PAI-RAG API documentation.
+"""Knowledgebase API Tests for the NexaMind AI backend.
 Reference: https://help.aliyun.com/zh/pai/use-cases/rag-api-interface-for-v0-4-x
 """
 import os

@@ -1,6 +1,6 @@
 [project]
-name = "pairag"
-version = "2.0.0"
+name = "nexamind-ai"
+version = "1.0.0"
 requires-python = ">=3.11,<3.13"
 
 [tool.coverage.report]
@@ -21,10 +21,10 @@ omit = [
 ]
 
 [tool.poetry]
-name = "pairag"
-version = "2.0.0"
-description = "A short description of your project"
-authors = ["Your Name <you@example.com>"]
+name = "nexamind-ai"
+version = "1.0.0"
+description = "NexaMind AI - Agentic RAG workspace backend"
+authors = ["Varunbp06 <Varunbp06@users.noreply.github.com>"]
 packages = [
   {include = "db", from = "backend"},
   {include = "rag", from = "backend"},

@@ -11,7 +11,7 @@ from extensions.trace.base import init_instrument, TraceConfig
 from common.system_constants import DEFAULT_TENANT_ID
 
 
-DEFAULT_SERVICE_NAME = "pai-rag"
+DEFAULT_SERVICE_NAME = "nexamind-ai"
 
 def _load_trace_config_from_env() -> TraceModelEntity:
     logger.info("Loading trace config from environment variables.")

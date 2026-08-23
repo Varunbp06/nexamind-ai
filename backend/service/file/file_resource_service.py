@@ -567,7 +567,7 @@ class FileResourceService:
         Used by batched /v1/files/{id}/url-style callers and as a future hook
         if/when a caller needs to pass files to a remote service by URL
         instead of by base64. The multimodal tool chain itself stays on
-        base64 (verified on the PAI-RAG feature branch), so this method has
+        base64 (verified on the feature branch), so this method has
         no current caller inside parse_attachment_tools.
         """
         if not file_ids:

@@ -1,11 +1,11 @@
 ---
 name: pairag-knowledge
-description: Search a PAI-RAG knowledge base and fetch source files from the command line. Use when the user asks to look something up in the knowledge base, search docs/RAG, find where something is documented, retrieve a passage with a citation, or read a knowledge-base file. Triggers — knowledge base, retrieval, RAG, "search the docs", "look it up in the KB", PAI-RAG.
+description: Search a knowledge base and fetch source files from the command line. Use when the user asks to look something up in the knowledge base, search docs/RAG, find where something is documented, retrieve a passage with a citation, or read a knowledge-base file. Triggers — knowledge base, retrieval, RAG, "search the docs", "look it up in the KB".
 ---
 
-# PAI-RAG Knowledge Base
+# Knowledge Base
 
-Read-only command-line access to a running PAI-RAG service. Use it to find and
+Read-only command-line access to a running backend service. Use it to find and
 cite knowledge-base content. All commands print compact markdown; add `--json`
 for raw output.
 
@@ -93,6 +93,6 @@ use `read` to pull the full text when you need more than the snippet.
 
 ## Notes
 
-- The PAI-RAG server must be running. If a command reports it can't reach the
+- The backend server must be running. If a command reports it can't reach the
   server, confirm the service is up and `PAIRAG_BASE_URL` points at it.
 - This skill is read-only: it never creates, edits, uploads, or deletes anything.

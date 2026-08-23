@@ -1,10 +1,10 @@
-# PAI-RAG Frontend i18n Implementation Guide
+# NexaMind AI Frontend i18n Implementation Guide
 
 ## 概述 / Overview
 
-本文档说明 PAI-RAG 前端的国际化(i18n)实现方案，支持中英文双语切换。
+本文档说明前端的国际化(i18n)实现方案，支持中英文双语切换。
 
-This document describes the internationalization (i18n) implementation for PAI-RAG frontend, supporting Chinese and English bilingual switching.
+This document describes the internationalization (i18n) implementation for the NexaMind AI frontend, supporting Chinese and English bilingual switching.
 
 ---
 

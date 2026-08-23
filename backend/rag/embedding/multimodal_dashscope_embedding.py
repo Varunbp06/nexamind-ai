@@ -204,7 +204,7 @@ class MultimodalDashscopeEmbedding(BaseEmbedding):
         return await asyncio.gather(*coros)
 
     # ------------------------------------------------------------------
-    # 同步占位（PAI-RAG 全异步路径，但 BaseEmbedding 抽象方法要求实现）
+    # 同步占位（全异步路径，但 BaseEmbedding 抽象方法要求实现）
     # ------------------------------------------------------------------
     def _get_query_embedding(self, query: str) -> List[float]:
         return asyncio.get_event_loop().run_until_complete(

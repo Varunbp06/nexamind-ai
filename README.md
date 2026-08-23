@@ -8,9 +8,10 @@ Chat with your documents. Build AI agents. Evaluate answers. All in one workspac
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-Varunbp06%2Fnexamind--ai-181717?logo=github)](https://github.com/Varunbp06/nexamind-ai)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FVarunbp06%2Fnexamind-ai&project-name=nexamind-ai&repository-name=nexamind-ai&root-directory=frontend)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![React](https://img.shields.io/badge/React-19-61dafb)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.1.0-009688)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)
 
 </div>
@@ -45,7 +46,6 @@ nexamind-ai/
 │   ├── components/    UI components
 │   └── lib/           Auth config, i18n, utilities
 ├── backend/           FastAPI RAG service (persistent services)
-├── docs/              Architecture documentation
 └── DEPLOY.md          Deployment guide (Vercel + backend)
 ```
 

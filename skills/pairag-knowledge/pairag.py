@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""pairag — read-only CLI for a running PAI-RAG knowledge base service."""
+"""pairag — read-only CLI for a running knowledge base service."""
 
 import argparse
 import json
@@ -89,7 +89,7 @@ class Client:
             raise PairagError(f"Server returned HTTP {exc.code}: {detail}")
         except urllib.error.URLError as exc:
             raise PairagError(
-                f"Cannot reach PAI-RAG at {self.base_url} — is the server running? ({exc.reason})"
+                f"Cannot reach the backend at {self.base_url} — is the server running? ({exc.reason})"
             )
         return json.loads(raw) if raw else {}
 
@@ -314,7 +314,7 @@ def _add_common(parser, suppress):
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        prog="pairag", description="Read-only CLI for a running PAI-RAG knowledge base."
+        prog="pairag", description="Read-only CLI for a running knowledge base."
     )
     _add_common(parser, suppress=False)
     sub = parser.add_subparsers(dest="command", required=True)

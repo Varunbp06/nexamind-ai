@@ -1,5 +1,5 @@
 # ==============================================================================
-# PAI-RAG Base Image
+# NexaMind AI Base Image
 # Contains: model_repository, resources (models and static assets)
 # 
 # This base image is built separately and updated only when models change.
@@ -34,6 +34,6 @@ COPY model_repository ./model_repository
 RUN echo "Built at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" > /app/.base-image-info
 
 # Labels for tracking
-LABEL maintainer="PAI-RAG Team" \
-      description="PAI-RAG Base Image with ML Models" \
+LABEL maintainer="Varunbp06" \
+      description="NexaMind AI Base Image with ML Models" \
       version="1.0"

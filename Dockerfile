@@ -1,5 +1,5 @@
 # ==============================================================================
-# PAI-RAG Full Image (Frontend + Backend)
+# NexaMind AI Full Image (Frontend + Backend)
 # Requires base image with models: registry.cn-hangzhou.aliyuncs.com/mybigpai/pairag-base:latest
 # ==============================================================================
 

@@ -67,9 +67,28 @@ export default function DocsPage() {
               Documentation
             </h1>
           </div>
-          <p className="body-md text-on-surface-variant mb-8">
+          <p className="body-md text-on-surface-variant mb-5">
             Everything you need to run your Agentic RAG workspace.
           </p>
+
+          <div className="flex flex-wrap items-center gap-3 mb-8">
+            <a
+              href="https://github.com/Varunbp06/nexamind-ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container px-4 py-2 body-sm font-medium text-on-surface hover:border-primary/50 hover:text-primary transition-colors"
+            >
+              <Github size={16} strokeWidth={1.8} />
+              View on GitHub
+              <ExternalLink size={14} className="text-on-surface-variant" />
+            </a>
+            <a
+              href="mailto:varunbpvarunbp@gmail.com"
+              className="inline-flex items-center gap-2 body-sm text-primary hover:underline"
+            >
+              Contact support
+            </a>
+          </div>
 
           <section className="mb-10">
             <h2 className="label-caps uppercase text-on-surface-variant mb-3">

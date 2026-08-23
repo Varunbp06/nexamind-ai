@@ -1,7 +1,13 @@
 {
   "name": "nexamind-ai-workspace",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "author": "Varunbp06",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Varunbp06/nexamind-ai.git"
+  },
+  "homepage": "https://github.com/Varunbp06/nexamind-ai#readme",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",

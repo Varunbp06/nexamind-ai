@@ -1,4 +1,4 @@
-"""Backend i18n (internationalization) module for PAI-RAG.
+"""Backend i18n (internationalization) module for NexaMind AI.
 
 This module provides a singleton I18n class for managing translations in the backend API layer.
 It loads translation resources from JSON files and provides a `t()` method for retrieving translated messages.

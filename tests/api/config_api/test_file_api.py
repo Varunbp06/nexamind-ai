@@ -1,4 +1,4 @@
-"""File Management API Tests based on PAI-RAG API documentation.
+"""File Management API Tests for the NexaMind AI backend.
 Reference: https://help.aliyun.com/zh/pai/use-cases/rag-api-interface-for-v0-4-x
 """
 import os
@@ -36,7 +36,7 @@ class TestFileAPI:
         kb_id = test_knowledgebase_for_file["id"]
         
         # Create a test file content
-        file_content = b"This is a test document for PAI-RAG API testing."
+        file_content = b"This is a test document for NexaMind AI API testing."
         files = {
             "files": ("test_document.txt", io.BytesIO(file_content), "text/plain")
         }

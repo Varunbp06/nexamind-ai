@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "pairag-file"
 version = "2.1.38"
-description = "PAI-RAG file processing library."
+description = "NexaMind AI file processing library."
 authors = []
 readme = "README.md"
 packages = [
