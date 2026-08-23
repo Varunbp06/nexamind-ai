@@ -1,4 +1,4 @@
-﻿# i18n (Internationalization) System
+# i18n (Internationalization) System
 
 This document describes the i18n implementation for the NexaMind AI frontend, supporting bilingual display in Chinese (zh) and English (en).
 
@@ -15,14 +15,14 @@ The i18n system consists of the following components:
 
 ## Features
 
-- âœ… Singleton pattern for centralized language management
-- âœ… Supports Chinese (zh) and English (en)
-- âœ… Nested translation keys with dot notation (e.g., `sidebar.knowledgebase`)
-- âœ… Parameter interpolation (e.g., `{count}` in translations)
-- âœ… LocalStorage persistence for language preference
-- âœ… React Context API for global state management
-- âœ… Real-time language switching without page reload
-- âœ… Type-safe translation keys
+- ✅ Singleton pattern for centralized language management
+- ✅ Supports Chinese (zh) and English (en)
+- ✅ Nested translation keys with dot notation (e.g., `sidebar.knowledgebase`)
+- ✅ Parameter interpolation (e.g., `{count}` in translations)
+- ✅ LocalStorage persistence for language preference
+- ✅ React Context API for global state management
+- ✅ Real-time language switching without page reload
+- ✅ Type-safe translation keys
 
 ## Usage
 
@@ -52,7 +52,7 @@ export function MyComponent() {
       
       {/* Switch to specific language */}
       <button onClick={() => setLanguage('en')}>English</button>
-      <button onClick={() => setLanguage('zh')}>ä¸­æ–‡</button>
+      <button onClick={() => setLanguage('zh')}>中文</button>
       
       {/* Toggle between languages */}
       <button onClick={toggleLanguage}>Toggle Language</button>
@@ -70,9 +70,9 @@ export const translations: I18nConfig = {
   zh: {
     // Add new Chinese translations
     myFeature: {
-      title: 'æˆ‘çš„åŠŸèƒ½',
-      description: 'è¿™æ˜¯åŠŸèƒ½æè¿°',
-      action: 'ç‚¹å‡»è¿™é‡Œ',
+      title: '我的功能',
+      description: '这是功能描述',
+      action: '点击这里',
     },
   },
   en: {
@@ -92,21 +92,21 @@ The translation object is organized by module/page:
 
 ```
 translations
-â”œâ”€â”€ common          - Common UI elements (buttons, actions, etc.)
-â”œâ”€â”€ time            - Time-related strings
-â”œâ”€â”€ sidebar         - Sidebar navigation items
-â”œâ”€â”€ workspace       - Workspace management
-â”œâ”€â”€ knowledgebase   - Knowledge base module
-â”œâ”€â”€ apps            - Apps module
-â”œâ”€â”€ evaluation      - Evaluation module
-â”œâ”€â”€ chat            - Chat interface
-â”œâ”€â”€ config          - Configuration pages
-â”‚   â”œâ”€â”€ model
-â”‚   â”œâ”€â”€ vectordb
-â”‚   â”œâ”€â”€ search
-â”‚   â””â”€â”€ ...
-â”œâ”€â”€ messages        - Success/error messages
-â””â”€â”€ validation      - Form validation messages
+├── common          - Common UI elements (buttons, actions, etc.)
+├── time            - Time-related strings
+├── sidebar         - Sidebar navigation items
+├── workspace       - Workspace management
+├── knowledgebase   - Knowledge base module
+├── apps            - Apps module
+├── evaluation      - Evaluation module
+├── chat            - Chat interface
+├── config          - Configuration pages
+│   ├── model
+│   ├── vectordb
+│   ├── search
+│   └── ...
+├── messages        - Success/error messages
+└── validation      - Form validation messages
 ```
 
 ### 4. Parameter Interpolation
@@ -117,7 +117,7 @@ Use `{paramName}` in translations and pass parameters in the `t()` function:
 ```typescript
 {
   zh: {
-    greeting: 'ä½ å¥½, {name}! ä½ æœ‰ {count} æ¡æ¶ˆæ¯ã€‚'
+    greeting: '你好, {name}! 你有 {count} 条消息。'
   },
   en: {
     greeting: 'Hello, {name}! You have {count} messages.'
@@ -128,7 +128,7 @@ Use `{paramName}` in translations and pass parameters in the `t()` function:
 **Usage:**
 ```tsx
 {t('greeting', { name: 'Alice', count: 5 })}
-// Output (zh): ä½ å¥½, Alice! ä½ æœ‰ 5 æ¡æ¶ˆæ¯ã€‚
+// Output (zh): 你好, Alice! 你有 5 条消息。
 // Output (en): Hello, Alice! You have 5 messages.
 ```
 
@@ -196,9 +196,9 @@ unsubscribe();
 
 **Before:**
 ```tsx
-<Button>åˆ›å»º</Button>
-<h1>çŸ¥è¯†åº“</h1>
-<p>è¿˜æ²¡æœ‰åˆ›å»ºä»»ä½•çŸ¥è¯†åº“</p>
+<Button>创建</Button>
+<h1>知识库</h1>
+<p>还没有创建任何知识库</p>
 ```
 
 **After:**
@@ -214,9 +214,9 @@ const { t } = useI18n();
 
 The i18n system is already integrated in:
 
-- âœ… `app/layout.tsx` - I18nProvider wrapper
-- âœ… `components/app-sidebar.tsx` - Sidebar navigation and language switcher
-- ðŸ”„ Other components need to be migrated to use translations
+- ✅ `app/layout.tsx` - I18nProvider wrapper
+- ✅ `components/app-sidebar.tsx` - Sidebar navigation and language switcher
+- 🔄 Other components need to be migrated to use translations
 
 ### Steps to Migrate a Component
 
@@ -270,17 +270,17 @@ Methods:
 
 ```
 frontend/
-â”œâ”€â”€ app/
-â”‚   â”œâ”€â”€ layout.tsx                 # I18nProvider integration
-â”‚   â””â”€â”€ providers/
-â”‚       â””â”€â”€ i18n.tsx               # I18n Context Provider
-â”œâ”€â”€ components/
-â”‚   â””â”€â”€ language-switcher.tsx      # Language switcher UI
-â””â”€â”€ lib/
-    â”œâ”€â”€ i18n.ts                    # Core i18n class
-    â”œâ”€â”€ translations.ts            # All translations
-    â”œâ”€â”€ init-i18n.ts              # Initialization hook
-    â””â”€â”€ README_I18N.md            # This file
+├── app/
+│   ├── layout.tsx                 # I18nProvider integration
+│   └── providers/
+│       └── i18n.tsx               # I18n Context Provider
+├── components/
+│   └── language-switcher.tsx      # Language switcher UI
+└── lib/
+    ├── i18n.ts                    # Core i18n class
+    ├── translations.ts            # All translations
+    ├── init-i18n.ts              # Initialization hook
+    └── README_I18N.md            # This file
 ```
 
 ## Troubleshooting

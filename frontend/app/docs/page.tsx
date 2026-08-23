@@ -5,6 +5,8 @@ import {
   BookOpen,
   BrainCircuit,
   Database,
+  ExternalLink,
+  Github,
   Keyboard,
   LifeBuoy,
   MessagesSquare,
@@ -176,6 +178,27 @@ export default function DocsPage() {
                     className="inline-flex items-center gap-1.5 body-sm text-primary hover:underline mt-1"
                   >
                     varunbpvarunbp@gmail.com
+                  </a>
+                </div>
+              </div>
+              <div className="pt-3 border-t border-outline-variant/40 flex items-start gap-3">
+                <Github className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <div className="body-sm font-semibold text-on-surface">
+                    Open source
+                  </div>
+                  <p className="body-sm text-on-surface-variant">
+                    NexaMind AI is open source under the MIT license. Browse
+                    the codebase, report issues, or request features on GitHub.
+                  </p>
+                  <a
+                    href="https://github.com/Varunbp06/nexamind-ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 body-sm text-primary hover:underline mt-1"
+                  >
+                    github.com/Varunbp06/nexamind-ai
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>
               </div>

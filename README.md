@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # NexaMind AI
 
@@ -19,13 +19,13 @@ Chat with your documents. Build AI agents. Evaluate answers. All in one workspac
 
 **NexaMind AI** is a full-stack Agentic RAG (Retrieval-Augmented Generation) workspace:
 
-- ðŸ’¬ **AI Chat Workspace** â€” streaming conversations with reasoning traces, file attachments, and model controls
-- ðŸ§© **Apps** â€” create chatbot applications bound to knowledge bases, MCP tools, and guardrails
-- ðŸ“š **Knowledge Bases** â€” upload documents (PDF/DOCX/TXT/MD), parse, chunk, and index for retrieval
-- ðŸ“Š **Evaluation** â€” datasets, run configs, and experiment benchmarking for answer quality
-- ðŸ›  **Tools & MCP** â€” connect Model Context Protocol servers and external tools
-- âš™ï¸ **Admin Config** â€” LLMs, embeddings, rerankers, vector databases, tracing, and RBAC roles
-- ðŸ” **Authentication** â€” Google & GitHub SSO via NextAuth, with secure JWT sessions
+- 💬 **AI Chat Workspace** — streaming conversations with reasoning traces, file attachments, and model controls
+- 🧩 **Apps** — create chatbot applications bound to knowledge bases, MCP tools, and guardrails
+- 📚 **Knowledge Bases** — upload documents (PDF/DOCX/TXT/MD), parse, chunk, and index for retrieval
+- 📊 **Evaluation** — datasets, run configs, and experiment benchmarking for answer quality
+- 🛠️ **Tools & MCP** — connect Model Context Protocol servers and external tools
+- ⚙️ **Admin Config** — LLMs, embeddings, rerankers, vector databases, tracing, and RBAC roles
+- 🔐 **Authentication** — Google & GitHub SSO via NextAuth, with secure JWT sessions
 
 ## Tech Stack
 
@@ -38,14 +38,15 @@ Chat with your documents. Build AI agents. Evaluate answers. All in one workspac
 
 ## Project Structure
 
-```
-â”œâ”€â”€ frontend/        # Next.js 16 application (Vercel-ready)
-â”‚   â”œâ”€â”€ app/         # App Router pages + API routes
-â”‚   â”œâ”€â”€ components/  # UI components
-â”‚   â””â”€â”€ lib/         # Auth config, i18n, utilities
-â”œâ”€â”€ backend/         # FastAPI RAG service (persistent services)
-â”œâ”€â”€ docs/            # Architecture documentation
-â””â”€â”€ DEPLOY.md        # Deployment guide (Vercel + backend)
+```text
+nexamind-ai/
+├── frontend/          Next.js 16 application (Vercel-ready)
+│   ├── app/           App Router pages + API routes
+│   ├── components/    UI components
+│   └── lib/           Auth config, i18n, utilities
+├── backend/           FastAPI RAG service (persistent services)
+├── docs/              Architecture documentation
+└── DEPLOY.md          Deployment guide (Vercel + backend)
 ```
 
 ## Quick Start
