@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 # NexaMind AI
 
@@ -7,6 +7,7 @@
 Chat with your documents. Build AI agents. Evaluate answers. All in one workspace.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub](https://img.shields.io/badge/GitHub-Varunbp06%2Fnexamind--ai-181717?logo=github)](https://github.com/Varunbp06/nexamind-ai)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![React](https://img.shields.io/badge/React-19-61dafb)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.1.0-009688)
@@ -18,13 +19,13 @@ Chat with your documents. Build AI agents. Evaluate answers. All in one workspac
 
 **NexaMind AI** is a full-stack Agentic RAG (Retrieval-Augmented Generation) workspace:
 
-- 💬 **AI Chat Workspace** — streaming conversations with reasoning traces, file attachments, and model controls
-- 🧩 **Apps** — create chatbot applications bound to knowledge bases, MCP tools, and guardrails
-- 📚 **Knowledge Bases** — upload documents (PDF/DOCX/TXT/MD), parse, chunk, and index for retrieval
-- 📊 **Evaluation** — datasets, run configs, and experiment benchmarking for answer quality
-- 🛠 **Tools & MCP** — connect Model Context Protocol servers and external tools
-- ⚙️ **Admin Config** — LLMs, embeddings, rerankers, vector databases, tracing, and RBAC roles
-- 🔐 **Authentication** — Google & GitHub SSO via NextAuth, with secure JWT sessions
+- ðŸ’¬ **AI Chat Workspace** â€” streaming conversations with reasoning traces, file attachments, and model controls
+- ðŸ§© **Apps** â€” create chatbot applications bound to knowledge bases, MCP tools, and guardrails
+- ðŸ“š **Knowledge Bases** â€” upload documents (PDF/DOCX/TXT/MD), parse, chunk, and index for retrieval
+- ðŸ“Š **Evaluation** â€” datasets, run configs, and experiment benchmarking for answer quality
+- ðŸ›  **Tools & MCP** â€” connect Model Context Protocol servers and external tools
+- âš™ï¸ **Admin Config** â€” LLMs, embeddings, rerankers, vector databases, tracing, and RBAC roles
+- ðŸ” **Authentication** â€” Google & GitHub SSO via NextAuth, with secure JWT sessions
 
 ## Tech Stack
 
@@ -38,13 +39,13 @@ Chat with your documents. Build AI agents. Evaluate answers. All in one workspac
 ## Project Structure
 
 ```
-├── frontend/        # Next.js 16 application (Vercel-ready)
-│   ├── app/         # App Router pages + API routes
-│   ├── components/  # UI components
-│   └── lib/         # Auth config, i18n, utilities
-├── backend/         # FastAPI RAG service (persistent services)
-├── docs/            # Architecture documentation
-└── DEPLOY.md        # Deployment guide (Vercel + backend)
+â”œâ”€â”€ frontend/        # Next.js 16 application (Vercel-ready)
+â”‚   â”œâ”€â”€ app/         # App Router pages + API routes
+â”‚   â”œâ”€â”€ components/  # UI components
+â”‚   â””â”€â”€ lib/         # Auth config, i18n, utilities
+â”œâ”€â”€ backend/         # FastAPI RAG service (persistent services)
+â”œâ”€â”€ docs/            # Architecture documentation
+â””â”€â”€ DEPLOY.md        # Deployment guide (Vercel + backend)
 ```
 
 ## Quick Start
