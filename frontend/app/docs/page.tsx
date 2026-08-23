@@ -171,6 +171,12 @@ export default function DocsPage() {
                     contact your workspace administrator. Service health is
                     shown live in the top bar status indicator.
                   </p>
+                  <a
+                    href="mailto:varunbpvarunbp@gmail.com"
+                    className="inline-flex items-center gap-1.5 body-sm text-primary hover:underline mt-1"
+                  >
+                    varunbpvarunbp@gmail.com
+                  </a>
                 </div>
               </div>
             </div>
