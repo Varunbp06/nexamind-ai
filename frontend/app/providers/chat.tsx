@@ -4,7 +4,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const CHAT_OPTIONS_STORAGE_KEY = 'pai-rag-chat-options';
+const CHAT_OPTIONS_STORAGE_KEY = 'nexamind-chat-options';
+const LEGACY_CHAT_OPTIONS_KEY = 'pai-rag-chat-options';
 const USER_QUERY_PARAM = 'user';
 
 interface ChatOptionsState {
@@ -50,7 +51,9 @@ function loadChatOptionsFromStorage(): ChatOptionsState {
     // ignore
   }
 
-  const saved = localStorage.getItem(CHAT_OPTIONS_STORAGE_KEY);
+  const saved =
+    localStorage.getItem(CHAT_OPTIONS_STORAGE_KEY) ??
+    localStorage.getItem(LEGACY_CHAT_OPTIONS_KEY);
   if (saved) {
     try {
       const parsed = JSON.parse(saved) as Partial<ChatOptionsState>;
