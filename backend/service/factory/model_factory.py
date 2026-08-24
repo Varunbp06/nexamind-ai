@@ -4,7 +4,6 @@ from common.encrypt_utils import decrypt_key
 from db.models.knowledgebase.embedding import EmbeddingModelEntity, EmbeddingType
 from llama_index.core.embeddings import BaseEmbedding
 from llama_index.embeddings.openai_like import OpenAILikeEmbedding
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from rag.embedding.multimodal_dashscope_embedding import MultimodalDashscopeEmbedding
 from rag.rerank.dashscope_reranker import DashscopeReranker
 from rag.rerank.multimodal_dashscope_reranker import MultimodalDashscopeReranker
@@ -12,10 +11,52 @@ from utils.modelscope_utils import download_model_to_directory
 from rag.rerank.reranker import OpenAICompatibleReranker
 from db.models.knowledgebase.reranker import RerankerType, RerankerModelEntity
 from loguru import logger
+import os
 from typing import Union
 from utils.cuda_utils import infer_cuda_device
 from common.llm.openai.openai_like import OpenAILike
 from utils.lru_cache import LruCache
+
+
+class NvidiaRemoteEmbedding(OpenAILikeEmbedding):
+    """OpenAILikeEmbedding for NVIDIA NIM catalog models.
+
+    NIM's /v1/embeddings requires an ``input_type`` of ``query`` or
+    ``passage`` for asymmetric models and rejects a ``dimensions`` body
+    parameter, so this subclass injects input_type per call site and skips
+    forwarding dimensions.
+    """
+
+    def __init__(self, **kwargs):
+        kwargs.pop("dimensions", None)
+        super().__init__(**kwargs)
+        # OpenAIEmbedding may have folded dimensions into additional_kwargs;
+        # ensure it is never sent to NIM.
+        self.additional_kwargs.pop("dimensions", None)
+
+    def _get_query_embedding(self, query: str):
+        self.additional_kwargs["input_type"] = "query"
+        return super()._get_query_embedding(query)
+
+    async def _aget_query_embedding(self, query: str):
+        self.additional_kwargs["input_type"] = "query"
+        return await super()._aget_query_embedding(query)
+
+    def _get_text_embedding(self, text: str):
+        self.additional_kwargs["input_type"] = "passage"
+        return super()._get_text_embedding(text)
+
+    async def _aget_text_embedding(self, text: str):
+        self.additional_kwargs["input_type"] = "passage"
+        return await super()._aget_text_embedding(text)
+
+    def _get_text_embeddings(self, texts):
+        self.additional_kwargs["input_type"] = "passage"
+        return super()._get_text_embeddings(texts)
+
+    async def _aget_text_embeddings(self, texts):
+        self.additional_kwargs["input_type"] = "passage"
+        return await super()._aget_text_embeddings(texts)
 
 
 embedding_cache = LruCache(max_size=10)
@@ -86,17 +127,30 @@ def create_embedding_model(config: EmbeddingModelEntity) -> BaseEmbedding:
         logger.info(
             f"Creating OpenAI like embedding model {config.model_name} with {config}."
         )
-        embedding_model = OpenAILikeEmbedding(
+        common_kwargs = dict(
             api_key=decrypt_key(config.encrypted_api_key),
             model_name=config.model_name,
-            dimensions=config.dimension,
             embed_batch_size=config.embed_batch_size,
             api_base=config.endpoint,
         )
+        endpoint = (config.endpoint or "").lower()
+        if "integrate.api.nvidia.com" in endpoint or os.getenv(
+            "EMBEDDING_INPUT_TYPE_MODE", ""
+        ).lower() == "nim":
+            embedding_model = NvidiaRemoteEmbedding(dimensions=config.dimension, **common_kwargs)
+        else:
+            embedding_model = OpenAILikeEmbedding(
+                dimensions=config.dimension,
+                **common_kwargs,
+            )
     elif config.type == EmbeddingType.LOCAL:
         logger.info(
             f"Creating local embedding model {config.model_name} with {config}."
         )
+        # Imported lazily: pulling HuggingFaceEmbedding imports torch (~250MB
+        # RSS) which is wasted on deployments that only use remote embeddings.
+        from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+
         pai_model_path = download_model_to_directory(config.model_name)
         if not pai_model_path:
             raise ValueError(f"Failed to download model {config.model_name}.")

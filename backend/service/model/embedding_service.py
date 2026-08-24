@@ -1,5 +1,6 @@
 """Embedding Service layer for database operations."""
 
+import os
 from typing import Optional, List
 from sqlmodel import select, func
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -65,28 +66,62 @@ class EmbeddingService:
         """
         Get the default Embedding entity.
 
+        When EMBEDDING_API_KEY is set (hosted deploys), the default embedding
+        is a remote OpenAI-like model (e.g. NVIDIA NIM) instead of the local
+        BAAI/bge-m3 download — required on small-RAM hosts such as Render free.
+
         Returns:
             EmbeddingModelEntity if found, None otherwise
         """
-        statement = select(EmbeddingModelEntity).where(EmbeddingModelEntity.model_id == "BAAI/bge-m3", EmbeddingModelEntity.tenant_id == tenant_id)
+        default_model_id = os.getenv("EMBEDDING_MODEL_ID", "BAAI/bge-m3")
+        statement = select(EmbeddingModelEntity).where(
+            EmbeddingModelEntity.model_id == default_model_id, EmbeddingModelEntity.tenant_id == tenant_id
+        )
         result = await self.session.exec(statement)
         default_embedding = result.first()
         if not default_embedding:
-            logger.info(f"No default embedding model was found, and using {DEFAULT_EMBEDDING_MODEL} for attachment knowledgebase.")
-            default_embedding = await self.create_embedding(
-                embedding_data=EmbeddingModelCreate(
+            emb_api_key = os.getenv("EMBEDDING_API_KEY")
+            if emb_api_key:
+                endpoint = os.getenv(
+                    "EMBEDDING_ENDPOINT", "https://integrate.api.nvidia.com/v1"
+                )
+                dimension = int(os.getenv("EMBEDDING_DIM", "1024"))
+                logger.info(
+                    f"No default embedding model was found; creating remote default {default_model_id} via {endpoint}."
+                )
+                default_embedding = await self.create_embedding(
+                    embedding_data=EmbeddingModelCreate(
+                        tenant_id=tenant_id,
+                        api_key=emb_api_key,
+                        model_name=default_model_id,
+                        model_id=default_model_id,
+                        dimension=dimension,
+                        type=EmbeddingType.OPENAI_LIKE,
+                        provider_name="openai_like",
+                        endpoint=endpoint,
+                        embed_batch_size=10,
+                        is_default=True,
+                        is_ready=True,
+                    ),
                     tenant_id=tenant_id,
-                    model_name=DEFAULT_EMBEDDING_MODEL,
-                    model_id=DEFAULT_EMBEDDING_MODEL,
-                    dimension=1024,
-                    type=EmbeddingType.LOCAL,
-                    provider_name="openai_like",
-                    is_default=True,
-                    is_ready=True,
-                ),
-                tenant_id=tenant_id,
-            )
-            await self.session.commit()
+                )
+                await self.session.commit()
+            else:
+                logger.info(f"No default embedding model was found, and using {DEFAULT_EMBEDDING_MODEL} for attachment knowledgebase.")
+                default_embedding = await self.create_embedding(
+                    embedding_data=EmbeddingModelCreate(
+                        tenant_id=tenant_id,
+                        model_name=DEFAULT_EMBEDDING_MODEL,
+                        model_id=DEFAULT_EMBEDDING_MODEL,
+                        dimension=1024,
+                        type=EmbeddingType.LOCAL,
+                        provider_name="openai_like",
+                        is_default=True,
+                        is_ready=True,
+                    ),
+                    tenant_id=tenant_id,
+                )
+                await self.session.commit()
         return default_embedding
 
 
