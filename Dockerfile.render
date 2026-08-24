@@ -1,0 +1,39 @@
+# Lightweight Dockerfile for Render free tier (512 MB / no persistent disk).
+# - CPU-only torch (avoids ~2.5 GB CUDA wheels)
+# - redis-server runs inside the container (broker for Celery)
+# - single gunicorn worker + single Celery worker to stay within memory limits
+# Persistent state (SQLite/Chroma/uploads) lives under /data when a Render
+# disk is attached (paid plans), otherwise ./localdata (ephemeral on free).
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl libgomp1 libgl1 libglib2.0-0 redis-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# Dependency manifests first for layer caching
+COPY pyproject.toml poetry.lock ./
+COPY integrations/pairag-file/pyproject.toml ./integrations/pairag-file/pyproject.toml
+COPY integrations/pairag-file/pairag ./integrations/pairag-file/pairag
+
+# CPU-only torch/torchvision first so poetry sees them satisfied
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --no-root
+
+# Application code
+COPY backend ./backend
+COPY alembic ./alembic
+COPY alembic.ini ./
+COPY resources ./resources
+COPY scripts ./scripts
+RUN chmod +x scripts/start-render.sh
+
+# /data is the Render disk mount point (paid plans). Free tier: plain dirs,
+# same ephemeral behavior as before — attach a disk later, no changes needed.
+RUN mkdir -p /data/appdata/tmp /data/appdata/localdata
+
+EXPOSE 10000
+CMD ["bash", "scripts/start-render.sh"]

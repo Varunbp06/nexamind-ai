@@ -5,7 +5,7 @@ services:
   - type: web
     name: nexamind-ai-backend
     runtime: docker
-    dockerfilePath: ./Dockerfile.api
+    dockerfilePath: ./Dockerfile.render
     plan: free
     region: oregon
     healthCheckPath: /health
