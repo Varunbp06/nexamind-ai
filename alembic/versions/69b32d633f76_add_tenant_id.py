@@ -89,31 +89,60 @@ def upgrade() -> None:
             batch_op.drop_constraint(op.f('unique_kb_metadata'), type_='unique')
             batch_op.create_unique_constraint('unique_kb_metadata', ['name', 'kb_id'])
     elif op.get_context().dialect.name == 'postgresql':
-        op.drop_constraint(op.f('unique_kb_metadata'), 'pai_knowledgebase_metadata', type_='unique')
-        op.create_unique_constraint('unique_kb_metadata', 'pai_knowledgebase_metadata', ['name', 'kb_id'])
-        op.drop_constraint('pai_knowledgebase_name_key', 'pai_knowledgebase', type_='unique')
-        op.drop_constraint('pai_embedding_model_model_id_key', 'pai_embedding_model', type_='unique')
-        op.drop_constraint('pai_llm_model_model_id_key', 'pai_llm_model', type_='unique')
-        op.drop_constraint('pai_reranker_model_model_id_key', 'pai_reranker_model', type_='unique')
-        op.drop_constraint('pai_roles_name_key', 'pai_roles', type_='unique')
-        op.create_unique_constraint('unique_embedding_model', 'pai_embedding_model', ['tenant_id', 'model_id'])
-        op.drop_constraint(op.f('unique_kb_file_metadata'), 'pai_file_metadata', type_='unique')
-        op.create_unique_constraint('unique_kb_file_metadata', 'pai_file_metadata', ['id', 'kb_id', 'file_id', 'tenant_id'])
-        op.create_unique_constraint('unique_kb_name', 'pai_knowledgebase', ['tenant_id', 'name'])
-    
-        op.drop_constraint(op.f('unique_kb_file'), 'pai_knowledgebase_file', type_='unique')
-        op.create_unique_constraint('unique_kb_file', 'pai_knowledgebase_file', ['kb_id', 'message_id', 'file_name', 'tenant_id'])
-    
-        op.drop_constraint(op.f('unique_kb_file_task'), 'pai_knowledgebase_file_task', type_='unique')
-        op.create_unique_constraint('unique_kb_file_task', 'pai_knowledgebase_file_task', ['kb_id', 'file_id', 'file_part', 'tenant_id'])
-    
-        op.create_unique_constraint('unique_llm_model', 'pai_llm_model', ['tenant_id', 'model_id'])
+        def _drop_if_exists(table: str, name: str) -> None:
+            """Drop a unique/index constraint only when it actually exists.
 
-        op.drop_constraint(op.f('unique_role_permission'), 'pai_permissions', type_='unique')
-        op.create_unique_constraint('unique_role_permission', 'pai_permissions', ['name', 'role_id', 'tenant_id'])
-        op.create_unique_constraint('unique_reranker_model', 'pai_reranker_model', ['tenant_id', 'model_id'])
-        op.drop_constraint(op.f('unique_user_role'), 'pai_user_roles', type_='unique')
-        op.create_unique_constraint('unique_user_role', 'pai_user_roles', ['user_id', 'role_id', 'tenant_id'])
+            Fresh Postgres databases created from earlier migrations may not
+            carry the server-auto-named ``<table>_<col>_key`` variants this
+            revision historically targeted.
+            """
+            bind = op.get_bind()
+            insp = sa.inspect(bind)
+            names = {c["name"] for c in insp.get_unique_constraints(table)}
+            try:
+                idx = {i["name"] for i in insp.get_indexes(table)}
+                names |= idx
+            except Exception:
+                pass
+            if name in names:
+                op.drop_constraint(name, table, type_='unique')
+            else:
+                print(f"[69b32d633f76] skip missing constraint {name} on {table}")
+
+        def _create_unique_if_missing(table: str, name: str, cols) -> None:
+            bind = op.get_bind()
+            insp = sa.inspect(bind)
+            names = {c["name"] for c in insp.get_unique_constraints(table)}
+            if name in names:
+                print(f"[69b32d633f76] constraint {name} already on {table}; skipping create")
+                return
+            op.create_unique_constraint(name, table, cols)
+
+        _drop_if_exists('pai_knowledgebase_metadata', op.f('unique_kb_metadata'))
+        _create_unique_if_missing('pai_knowledgebase_metadata', 'unique_kb_metadata', ['name', 'kb_id'])
+        _drop_if_exists('pai_knowledgebase', 'pai_knowledgebase_name_key')
+        _drop_if_exists('pai_embedding_model', 'pai_embedding_model_model_id_key')
+        _drop_if_exists('pai_llm_model', 'pai_llm_model_model_id_key')
+        _drop_if_exists('pai_reranker_model', 'pai_reranker_model_model_id_key')
+        _drop_if_exists('pai_roles', 'pai_roles_name_key')
+        _create_unique_if_missing('pai_embedding_model', 'unique_embedding_model', ['tenant_id', 'model_id'])
+        _drop_if_exists('pai_file_metadata', op.f('unique_kb_file_metadata'))
+        _create_unique_if_missing('pai_file_metadata', 'unique_kb_file_metadata', ['id', 'kb_id', 'file_id', 'tenant_id'])
+        _create_unique_if_missing('pai_knowledgebase', 'unique_kb_name', ['tenant_id', 'name'])
+
+        _drop_if_exists('pai_knowledgebase_file', op.f('unique_kb_file'))
+        _create_unique_if_missing('pai_knowledgebase_file', 'unique_kb_file', ['kb_id', 'message_id', 'file_name', 'tenant_id'])
+
+        _drop_if_exists('pai_knowledgebase_file_task', op.f('unique_kb_file_task'))
+        _create_unique_if_missing('pai_knowledgebase_file_task', 'unique_kb_file_task', ['kb_id', 'file_id', 'file_part', 'tenant_id'])
+
+        _create_unique_if_missing('pai_llm_model', 'unique_llm_model', ['tenant_id', 'model_id'])
+
+        _drop_if_exists('pai_permissions', op.f('unique_role_permission'))
+        _create_unique_if_missing('pai_permissions', 'unique_role_permission', ['name', 'role_id', 'tenant_id'])
+        _create_unique_if_missing('pai_reranker_model', 'unique_reranker_model', ['tenant_id', 'model_id'])
+        _drop_if_exists('pai_user_roles', op.f('unique_user_role'))
+        _create_unique_if_missing('pai_user_roles', 'unique_user_role', ['user_id', 'role_id', 'tenant_id'])
 
     # ### end Alembic commands ###
 
