@@ -1,0 +1,51 @@
+# Modal deploy target for NexaMind AI backend.
+# Same two-stage pairag-base image as Render/HF targets; Modal wraps the
+# FastAPI app as an ASGI web endpoint and mounts a persistent Volume at
+# /data so SQLite/Chroma/uploads survive restarts (free tier includes 1TB).
+
+ARG BASE_IMAGE=mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag-base:latest
+
+# ---------- Stage 1: Python deps ----------
+FROM python:3.11-slim AS python-builder
+
+RUN pip3 install --no-cache-dir poetry
+
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_VIRTUALENVS_CREATE=1 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache
+
+WORKDIR /app
+
+COPY poetry.lock pyproject.toml ./
+COPY backend ./backend
+COPY integrations ./integrations
+RUN poetry install --no-interaction --no-ansi && \
+    rm -rf $POETRY_CACHE_DIR && \
+    find /app/.venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# ---------- Stage 2: Production (from pairag-base) ----------
+FROM ${BASE_IMAGE}
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    redis-server curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+COPY --from=python-builder /app/.venv /app/.venv
+
+COPY resources ./resources
+COPY scripts ./scripts
+COPY backend ./backend
+COPY integrations ./integrations
+COPY alembic ./alembic
+COPY alembic.ini ./
+
+RUN mkdir -p /data/appdata/tmp /data/appdata/localdata && chmod +x scripts/start-render.sh
