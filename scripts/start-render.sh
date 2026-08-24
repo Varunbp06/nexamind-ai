@@ -22,11 +22,16 @@ fi
 echo "[start-render] running migrations..."
 alembic upgrade head || echo "[start-render] alembic failed (continuing)"
 
-# Start Celery worker (background) — same invocation as start-api.sh, no --app-dir (package installed via poetry .venv)
-echo "[start-render] starting celery worker..."
-celery -A app.worker worker --loglevel=warning --concurrency=1 &
-CELERY_PID=$!
-echo "[start-render] celery PID $CELERY_PID"
+# Start Celery worker (background) unless tasks run inline in the API
+# process (PAIRAG_TASK_MODE=inline on small-RAM hosts).
+if [ "${PAIRAG_TASK_MODE:-}" = "inline" ]; then
+  echo "[start-render] PAIRAG_TASK_MODE=inline - skipping celery worker"
+else
+  echo "[start-render] starting celery worker..."
+  celery -A app.worker worker --loglevel=warning --concurrency=1 &
+  CELERY_PID=$!
+  echo "[start-render] celery PID $CELERY_PID"
+fi
 
 # Start gunicorn (background) — match start-api.sh, single worker for 512 MB
 echo "[start-render] starting gunicorn on port ${PORT:-10000}..."

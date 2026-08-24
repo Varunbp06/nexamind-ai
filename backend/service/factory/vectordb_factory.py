@@ -236,12 +236,26 @@ def create_vector_store(
         vector_store.create_search_index_if_not_exist()
 
     elif isinstance(vector_db_connection, LocalConnection):
-        logger.info(f"Creating LocalVectorStore for {kb_id} with table name {table_name} with port {DEFAULT_CHROMA_PORT}.")
-        vector_store = LocalChromaVectorStore(
-            collection_name=table_name,
-            host="localhost",
-            port=DEFAULT_CHROMA_PORT,
-        )
+        import os as _os
+
+        if _os.getenv("CHROMA_INPROCESS", "").lower() == "true":
+            # Embedded Chroma (PersistentClient) — no subprocess, saves
+            # ~200MB RSS on small-RAM single-process hosts.
+            persist_dir = _os.getenv("CHROMA_PERSIST_DIR", "./tmp/sqlite/chroma")
+            logger.info(
+                f"Creating in-process LocalVectorStore for {kb_id} with table name {table_name} at {persist_dir}."
+            )
+            vector_store = LocalChromaVectorStore(
+                collection_name=table_name,
+                persist_dir=persist_dir,
+            )
+        else:
+            logger.info(f"Creating LocalVectorStore for {kb_id} with table name {table_name} with port {DEFAULT_CHROMA_PORT}.")
+            vector_store = LocalChromaVectorStore(
+                collection_name=table_name,
+                host="localhost",
+                port=DEFAULT_CHROMA_PORT,
+            )
     else:
         raise ValueError(f"Unknown vector_db_connection: {vector_db_connection}.")
 

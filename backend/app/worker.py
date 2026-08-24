@@ -70,6 +70,23 @@ if _FILE_GC_INTERVAL > 0:
         },
     }
 
+# Inline task mode for small-RAM single-process hosts (e.g. Render free):
+# tasks run eagerly inside the API process instead of a separate Celery
+# worker, saving ~300MB RSS. Enabled via PAIRAG_TASK_MODE=inline.
+if os.environ.get("PAIRAG_TASK_MODE", "").lower() == "inline":
+    from celery import Task
+
+    def _inline_delay(task_self, *args, **kwargs):
+        logger.info(
+            f"[INLINE] Executing task {getattr(task_self, 'name', task_self)} in-process."
+        )
+        return task_self.apply(args=args, kwargs=kwargs)
+
+    Task.delay = _inline_delay
+    logger.info(
+        "[INLINE] PAIRAG_TASK_MODE=inline - Celery tasks execute in the API process; no worker needed."
+    )
+
 # Periodic dispatcher that enqueues syncs for due data sources (per their
 # sync_schedule). Set PAIRAG_DATASOURCE_SYNC_DISPATCH_INTERVAL_SECONDS=0 to disable.
 _DS_DISPATCH_INTERVAL = int(os.environ.get("PAIRAG_DATASOURCE_SYNC_DISPATCH_INTERVAL_SECONDS", "300"))

@@ -13,7 +13,6 @@ from db.models.knowledgebase.reranker import RerankerType, RerankerModelEntity
 from loguru import logger
 import os
 from typing import Union
-from utils.cuda_utils import infer_cuda_device
 from common.llm.openai.openai_like import OpenAILike
 from utils.lru_cache import LruCache
 
@@ -150,6 +149,7 @@ def create_embedding_model(config: EmbeddingModelEntity) -> BaseEmbedding:
         # Imported lazily: pulling HuggingFaceEmbedding imports torch (~250MB
         # RSS) which is wasted on deployments that only use remote embeddings.
         from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+        from utils.cuda_utils import infer_cuda_device
 
         pai_model_path = download_model_to_directory(config.model_name)
         if not pai_model_path:

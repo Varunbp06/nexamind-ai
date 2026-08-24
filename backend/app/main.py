@@ -58,14 +58,20 @@ async def lifespan(app: FastAPI):
         sqlite_thread = threading.Thread(target=sync_sqlite_store_task, daemon=False)
         sqlite_thread.start()
 
-    chroma_service = LocalChromaService()
-    chroma_service.start()
+    if os.getenv("CHROMA_INPROCESS", "").lower() == "true":
+        # Embedded Chroma via PersistentClient — no subprocess to start/stop.
+        chroma_service = None
+        logger.info("CHROMA_INPROCESS=true - using embedded Chroma (no subprocess).")
+    else:
+        chroma_service = LocalChromaService()
+        chroma_service.start()
 
     async with anyio.create_task_group() as tg:
         mcp_middleware.mcp_task_group = tg
         yield
 
-    chroma_service.stop()
+    if chroma_service:
+        chroma_service.stop()
 
     if sqlite_thread:
         stop_event.set()
