@@ -1,5 +1,5 @@
 // This file is server-only and should never be imported in client components
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import yaml from 'js-yaml';
 
@@ -18,10 +18,15 @@ export function loadPromptsFromFile(): {
     return _promptsCache;
   }
 
-  // Get the project root directory
-  // In Next.js server-side, process.cwd() is the project root (/mnt/ranxia/NexaMind/frontend)
-  const projectRoot = resolve(process.cwd(), '..');
-  const promptsFile = resolve(projectRoot, 'resources/prompts/prompts.yaml');
+  // Candidate locations, in order:
+  //  1. frontend/resources/... — bundled with the app (works on Vercel where
+  //     only the frontend/ directory is deployed)
+  //  2. ../resources/... — repo root (works in local dev from frontend/)
+  const candidates = [
+    resolve(process.cwd(), 'resources/prompts/prompts.yaml'),
+    resolve(process.cwd(), '..', 'resources/prompts/prompts.yaml'),
+  ];
+  const promptsFile = candidates.find((p) => existsSync(p)) ?? candidates[0];
 
   try {
     const fileContent = readFileSync(promptsFile, 'utf-8');
