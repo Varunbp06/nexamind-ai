@@ -1,39 +1,65 @@
-# Lightweight Dockerfile for Render free tier (512 MB / no persistent disk).
-# - CPU-only torch (avoids ~2.5 GB CUDA wheels)
-# - redis-server runs inside the container (broker for Celery)
-# - single gunicorn worker + single Celery worker to stay within memory limits
-# Persistent state (SQLite/Chroma/uploads) lives under /data when a Render
-# disk is attached (paid plans), otherwise ./localdata (ephemeral on free).
-FROM python:3.11-slim
+# Render Dockerfile — backend only, based on Dockerfile.api but tuned for Render free tier
+# Uses the same pairag-base image that the proven API image uses (14-min build succeeds on Render).
+# Adds: redis-server in-container, single-worker profile, /data disk symlinks, PORT 10000, start-render.sh.
+
+ARG BASE_IMAGE=mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag-base:latest
+
+# ---------- Stage 1: Python deps ----------
+FROM python:3.11-slim AS python-builder
+
+RUN pip3 install --no-cache-dir poetry
+
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_VIRTUALENVS_CREATE=1 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache
 
 WORKDIR /app
 
+COPY poetry.lock pyproject.toml ./
+COPY backend ./backend
+COPY integrations ./integrations
+RUN poetry install --no-interaction --no-ansi && \
+    rm -rf $POETRY_CACHE_DIR && \
+    find /app/.venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# ---------- Stage 2: Production (from pairag-base) ----------
+FROM ${BASE_IMAGE} AS prod
+
+WORKDIR /app
+
+# redis for Celery broker + curl for healthcheck; base already has most libs but ensure present
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential curl libgomp1 libgl1 libglib2.0-0 redis-server \
+    redis-server curl \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Dependency manifests first for layer caching
-COPY pyproject.toml poetry.lock ./
-COPY integrations/pairag-file/pyproject.toml ./integrations/pairag-file/pyproject.toml
-COPY integrations/pairag-file/pairag ./integrations/pairag-file/pairag
+ENV VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# CPU-only torch/torchvision first so poetry sees them satisfied
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu \
-    && pip install --no-cache-dir poetry \
-    && poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi --no-root
+COPY --from=python-builder /app/.venv /app/.venv
 
-# Application code
-COPY backend ./backend
-COPY alembic ./alembic
-COPY alembic.ini ./
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN apt-get update \
+    && playwright install --with-deps chromium \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# App files (no frontend)
 COPY resources ./resources
 COPY scripts ./scripts
-RUN chmod +x scripts/start-render.sh
+COPY backend ./backend
+COPY integrations ./integrations
+COPY alembic ./alembic
+COPY alembic.ini ./
 
-# /data is the Render disk mount point (paid plans). Free tier: plain dirs,
-# same ephemeral behavior as before — attach a disk later, no changes needed.
-RUN mkdir -p /data/appdata/tmp /data/appdata/localdata
+RUN chmod +x scripts/start-render.sh && mkdir -p /data/appdata/tmp /data/appdata/localdata
 
 EXPOSE 10000
+
+HEALTHCHECK --interval=60s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-10000}/health || exit 1
+
 CMD ["bash", "scripts/start-render.sh"]

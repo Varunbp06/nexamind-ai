@@ -9,6 +9,15 @@ const CHAT_LIMIT = parseInt(process.env.RATE_LIMIT_CHAT_PER_MIN || '30', 10);
 const WINDOW_MS = 60_000;
 const MAX_CHAT_BODY = 2 * 1024 * 1024;
 
+// Optional distributed limiter via Upstash Redis REST. When
+// UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set, limits are
+// enforced globally across all edge/serverless instances. Otherwise falls
+// back to the in-process sliding window (per-instance, still effective
+// against bursts — see DEPLOY.md).
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL || '';
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+const UPSTASH_ENABLED = Boolean(UPSTASH_URL && UPSTASH_TOKEN);
+
 type Bucket = { count: number; reset: number };
 const buckets = new Map<string, Bucket>();
 
@@ -34,6 +43,45 @@ function hitLimit(key: string, limit: number, now: number) {
     };
   }
   return { allowed: true, retryAfter: 0 };
+}
+
+async function distributedHitLimit(
+  key: string,
+  limit: number,
+): Promise<{ allowed: boolean; retryAfter: number } | null> {
+  if (!UPSTASH_ENABLED) return null;
+  const url = UPSTASH_URL.replace(/\/$/, '');
+  try {
+    // Fixed-window: INCR + PEXPIRE NX. Pipeline keeps it to one round-trip.
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 600);
+    const res = await fetch(`${url}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${UPSTASH_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([
+        ['INCR', key],
+        ['PTTL', key],
+        ['PEXPIRE', key, String(WINDOW_MS), 'NX'],
+      ]),
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    const data = (await res.json()) as Array<{ result: number | string }>;
+    const count = Number(data?.[0]?.result);
+    const pttl = Number(data?.[1]?.result);
+    if (!Number.isFinite(count)) return null;
+    if (count > limit) {
+      const retryAfter = Number.isFinite(pttl) && pttl > 0 ? Math.max(1, Math.ceil(pttl / 1000)) : 60;
+      return { allowed: false, retryAfter };
+    }
+    return { allowed: true, retryAfter: 0 };
+  } catch {
+    return null; // Upstash unreachable — fall back to in-memory
+  }
 }
 
 function clientIp(req: NextRequest): string {
@@ -103,15 +151,23 @@ export async function proxy(req: NextRequest) {
     );
   }
 
-  // Rate limiting on API surface
+  // Rate limiting on API surface — distributed via Upstash when configured,
+  // otherwise per-instance in-memory (still effective against bursts).
   if (isApi && !pathname.startsWith('/api/auth/')) {
-    const now = Date.now();
-    pruneBuckets(now);
     const ip = clientIp(req);
     const isChat =
       pathname.startsWith('/api/chat/') || pathname === '/api/proxy/chat';
     const limit = isChat ? CHAT_LIMIT : GENERAL_LIMIT;
-    const verdict = hitLimit(`${isChat ? 'chat' : 'api'}:${ip}`, limit, now);
+    const distKey = `ratelimit:${isChat ? 'chat' : 'api'}:${ip}`;
+    let verdict: { allowed: boolean; retryAfter: number } | null = null;
+    if (UPSTASH_ENABLED) {
+      verdict = await distributedHitLimit(distKey, limit);
+    }
+    if (!verdict) {
+      const now = Date.now();
+      pruneBuckets(now);
+      verdict = hitLimit(distKey, limit, now);
+    }
     if (!verdict.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please slow down.' },
