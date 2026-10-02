@@ -1,5 +1,6 @@
 // app/api/chat/completions
 import { NextRequest, NextResponse } from 'next/server';
+import { requirePrincipal } from '@/app/api/require-principal';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8682";
 
 export const maxDuration = 300;
@@ -17,6 +18,12 @@ const MAX_TOKENS_CEILING = parseInt(
 const MAX_MESSAGES = 200;
 
 export async function POST(request: NextRequest) {
+  // Both branches below attach a server-held credential to the upstream call
+  // (the provider API key, or INTERNAL_API_TOKEN). Without a session this is
+  // an open, unmetered proxy onto the customer's LLM account.
+  const gate = await requirePrincipal(request);
+  if (gate.response) return gate.response;
+
   const text = await request.text();
 
   // ─── Standalone mode: forward directly to an OpenAI-compatible endpoint ───
