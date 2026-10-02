@@ -48,22 +48,27 @@ function newId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}${s.seq.toString(36)}`;
 }
 
-export function listThreads() {
+export function listThreads(owner: string) {
   return [...getStore().threads.values()]
+    .filter((t) => t.user_id === owner)
     .sort((a, b) => b.updated_at - a.updated_at)
     .map(({ messages, ...t }) => ({ ...t }));
 }
 
-export function createThread(body: {
-  user_id?: string;
-  title?: string;
-  archived?: boolean;
-}): StoredThread {
+export function createThread(
+  body: {
+    user_id?: string;
+    title?: string;
+    archived?: boolean;
+  },
+  owner: string,
+): StoredThread {
   const s = getStore();
   const now = Date.now();
   const t: StoredThread = {
     id: newId('th'),
-    user_id: body.user_id || 'local',
+    // Owner comes from the verified session, never from the request body.
+    user_id: owner,
     title: body.title || 'Chat',
     archived: Boolean(body.archived),
     messages: [],
@@ -74,19 +79,27 @@ export function createThread(body: {
   return t;
 }
 
-export function getThread(id: string): StoredThread | undefined {
-  return getStore().threads.get(id);
+export function getThread(
+  id: string,
+  owner: string,
+): StoredThread | undefined {
+  const t = getStore().threads.get(id);
+  if (!t || t.user_id !== owner) return undefined;
+  return t;
 }
 
-export function deleteThread(id: string): boolean {
+export function deleteThread(id: string, owner: string): boolean {
+  const t = getStore().threads.get(id);
+  if (!t || t.user_id !== owner) return false;
   return getStore().threads.delete(id);
 }
 
 export function appendMessage(
   id: string,
   msg: Partial<StoredMessage> & { role: string },
+  owner: string,
 ): StoredMessage | undefined {
-  const t = getThread(id);
+  const t = getThread(id, owner);
   if (!t) return undefined;
   const m: StoredMessage = {
     local_id: msg.local_id || newId('msg'),
@@ -109,8 +122,12 @@ export function appendMessage(
   return m;
 }
 
-export function setTitle(id: string, title: string): boolean {
-  const t = getThread(id);
+export function setTitle(
+  id: string,
+  title: string,
+  owner: string,
+): boolean {
+  const t = getThread(id, owner);
   if (!t) return false;
   t.title = title;
   return true;

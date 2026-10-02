@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { proxyRequest } from '@/app/api/proxy';
 import { deleteThread, getThread, isStandalone } from '../store';
+import { resolvePrincipal } from '@/lib/server/principal';
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +10,11 @@ export async function GET(
 ) {
   const { thread_id } = await ctx.params;
   if (isStandalone()) {
-    const t = getThread(thread_id);
+    const principal = await resolvePrincipal(request);
+    if (!principal) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const t = getThread(thread_id, principal.userId);
     if (!t) return NextResponse.json({ code: 404 }, { status: 404 });
     const { messages, ...rest } = t;
     return NextResponse.json({ code: 200, data: rest });
@@ -37,7 +42,11 @@ export async function DELETE(
 ) {
   const { thread_id } = await ctx.params;
   if (isStandalone()) {
-    deleteThread(thread_id);
+    const principal = await resolvePrincipal(request);
+    if (!principal) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    deleteThread(thread_id, principal.userId);
     return NextResponse.json({ code: 200 });
   }
   return proxyRequest(request);

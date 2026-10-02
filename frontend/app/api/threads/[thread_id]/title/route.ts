@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { proxyRequest } from '@/app/api/proxy';
 import { getThread, isStandalone, setTitle } from '../../store';
+import { resolvePrincipal } from '@/lib/server/principal';
 
 export async function POST(
   request: NextRequest,
@@ -9,6 +10,10 @@ export async function POST(
 ) {
   const { thread_id } = await ctx.params;
   if (isStandalone()) {
+    const principal = await resolvePrincipal(request);
+    if (!principal) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const body = await request.json().catch(() => null);
     // Derive a short title from the first user message text if available
     let title = '';
@@ -28,7 +33,7 @@ export async function POST(
         }
       }
     }
-    setTitle(thread_id, title || 'Chat');
+    setTitle(thread_id, title || 'Chat', principal.userId);
     return NextResponse.json({ code: 200, data: { title: title || 'Chat' } });
   }
   return proxyRequest(request);

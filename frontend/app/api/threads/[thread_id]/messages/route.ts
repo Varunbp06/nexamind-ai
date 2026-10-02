@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { proxyRequest } from '@/app/api/proxy';
 import { appendMessage, getThread, isStandalone } from '../../store';
+import { resolvePrincipal } from '@/lib/server/principal';
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +10,11 @@ export async function GET(
 ) {
   const { thread_id } = await ctx.params;
   if (isStandalone()) {
-    const t = getThread(thread_id);
+    const principal = await resolvePrincipal(request);
+    if (!principal) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const t = getThread(thread_id, principal.userId);
     return NextResponse.json({ code: 200, data: t?.messages ?? [] });
   }
   return proxyRequest(request);
@@ -21,8 +26,12 @@ export async function POST(
 ) {
   const { thread_id } = await ctx.params;
   if (isStandalone()) {
+    const principal = await resolvePrincipal(request);
+    if (!principal) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const body = await request.json().catch(() => ({}));
-    const m = appendMessage(thread_id, body || {});
+    const m = appendMessage(thread_id, body || {}, principal.userId);
     if (!m) return NextResponse.json({ code: 404 }, { status: 404 });
     return NextResponse.json({ code: 200, data: m });
   }
