@@ -84,6 +84,29 @@ async def lifespan(app: FastAPI):
     logger.info("Application shutting down...")
 
 
+
+def _cors_origins() -> list[str]:
+    """Resolve the browser origins allowed to call this API.
+
+    Defaults to same-origin only, which is correct when the frontend is served
+    from the same host as the backend. Additional origins are opt-in via
+    ALLOWED_ORIGINS (comma separated). "*" is only honoured when explicitly
+    requested, and never together with credentials.
+    """
+    configured = os.getenv("ALLOWED_ORIGINS", "").strip()
+    if not configured:
+        return []
+
+    origins = [item.strip() for item in configured.split(",") if item.strip()]
+    if "*" in origins:
+        logger.warning(
+            'ALLOWED_ORIGINS contains "*"; the API authenticates no user '
+            "requests, so any origin can read and mutate all data. Set "
+            "explicit origins instead."
+        )
+    return origins
+
+
 def create_app():
     from api.v1.routers import add_chat_router, add_config_router
     from api.api_exception import (
@@ -107,17 +130,25 @@ def create_app():
     # Pass the FastAPI app instance so middleware can mount sub-applications
     app.add_middleware(mcp_middleware.KbMcpServerMiddleware, fastapi_app=app)
 
+    # Origins are restricted by default. ALLOWED_ORIGINS previously defaulted
+    # to "*" while the API authenticates no user requests, so any website could
+    # drive a visitor's browser against this API and read or mutate every
+    # tenant's configuration, knowledge bases and stored credentials.
+    allow_origins = _cors_origins()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            o.strip()
-            for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")
-            if o.strip()
-        ],
+        allow_origins=allow_origins,
         allow_methods=["*"],
         allow_headers=["*"],
+        # Credentials are incompatible with a wildcard origin, and the API
+        # issues no cookies of its own.
         allow_credentials=False,
     )
+    if not allow_origins:
+        logger.info(
+            "CORS: no cross-origin origins allowed (same-origin only). Set "
+            "ALLOWED_ORIGINS to permit additional frontends."
+        )
     # Shared-secret guard: enforced only when INTERNAL_API_TOKEN is set, so
     # the publicly hosted backend rejects direct third-party calls while the
     # frontend proxy (which holds the same secret) keeps working.
