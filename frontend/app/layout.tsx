@@ -11,6 +11,7 @@ import { MyChatRuntimeProvider, TokenUsageProvider } from './runtime/usePaiChatT
 import { ChatProvider } from './providers/chat';
 import { TenantProvider } from './providers/tenant';
 import { I18nProvider } from './providers/i18n';
+import { AuthSessionProvider } from './providers/session';
 import { Toaster } from '@/components/ui/sonner';
 
 const geistSans = Geist({ variable: '--font-geist', subsets: ['latin'] });
@@ -39,6 +40,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <AuthSessionProvider>
         <I18nProvider>
           <TenantProvider>
             <ChatProvider>
@@ -53,6 +55,7 @@ export default function RootLayout({
             </ChatProvider>
           </TenantProvider>
         </I18nProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );

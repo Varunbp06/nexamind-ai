@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { BrainCircuit, Loader2 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
+import { BrainCircuit, Loader2, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+
+type ProviderId = 'google' | 'github';
+type ProvidersState = 'loading' | ProviderId[];
 
 function GoogleIcon() {
   return (
@@ -19,7 +20,7 @@ function GoogleIcon() {
       />
       <path
         fill="#4285F4"
-        d="M23.25 12.27c0-.79-.07-1.55-.2-2.27H12v4.51h6.32c-.27 1.48-1.11 2.73-2.36 3.57l3.62 2.81c2.12-1.96 3.67-4.85 3.67-8.62z"
+        d="M23.25 12.27c0-.79-.07-1.55-.2-2.27H12v4.51h6.32c-1.1 2.12-2.62 3.57-4.85 4.62l2.36 2.83C19.16 20.29 23.25 16.62 23.25 12.27z"
       />
       <path
         fill="#FBBC05"
@@ -36,68 +37,72 @@ function GoogleIcon() {
 function GithubIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
-      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.78 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.77.11 3.06.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.13v3.16c0 .3.21.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z" />
+      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.67-3.88-1.37-3.88-1.37-.52-1.34-1.28-1.7-1.28-1.7-1.05-.71.08-.7.08-.7 1.16.09 1.77 1.19 1.77 1.19 1.03 1.76 2.69 1.25 3.31.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18-1.18a11.04 11.04 0 0 1 5.78 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.77.11 3.06.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.13v3.16c0 .3.21.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z" />
     </svg>
   );
 }
 
+const PROVIDER_META: Record<
+  ProviderId,
+  { label: string; icon: () => React.ReactNode }
+> = {
+  google: { label: 'Google', icon: GoogleIcon },
+  github: { label: 'GitHub', icon: GithubIcon },
+};
+
+/**
+ * There is no separate account-registration flow: identities are created by the
+ * organisation's identity provider on first sign-in. Presenting a local
+ * "create an account" form would imply a credential store that does not exist.
+ */
 export default function SignupPage() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [providers, setProviders] = useState<ProvidersState>('loading');
+  const [submitting, setSubmitting] = useState<ProviderId | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    // No auth backend is wired yet — establish a local session and enter
-    // the workspace. Replace with the real register API when available.
-    try {
-      localStorage.setItem('nm_session', JSON.stringify({ name, email }));
-    } catch {}
-    try {
-      const r = localStorage.getItem('nm_auth_redirect');
-      localStorage.removeItem('nm_auth_redirect');
-      setTimeout(() => router.push(r || '/'), 400);
-    } catch {
-      setTimeout(() => router.push('/'), 400);
-    }
-  };
-
-  const handleSso = async (provider: string) => {
-    const label = provider === 'google' ? 'Google' : 'GitHub';
-    try {
-      const providers = await fetch('/api/auth/providers', {
-        cache: 'no-store',
-      }).then((r) => r.json());
-      if (providers && providers[provider]) {
-        await signIn(provider, { callbackUrl: '/auth/sso-callback' });
-        return;
-      }
-      try {
-        localStorage.setItem(
-          'nm_session',
-          JSON.stringify({
-            name: `Demo ${label} User`,
-            email: `demo.user@${provider}.com`,
-            sso: true,
-          }),
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/auth/providers', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((body: Record<string, unknown> | null) => {
+        if (cancelled) return;
+        setProviders(
+          (Object.keys(body ?? {}) as ProviderId[]).filter(
+            (id) => id in PROVIDER_META,
+          ),
         );
-      } catch {}
-      toast.success(`Signed up with ${label}`);
-      setTimeout(() => router.push('/'), 400);
+      })
+      .catch(() => {
+        if (!cancelled) setProviders([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSso = async (provider: ProviderId) => {
+    setSubmitting(provider);
+    try {
+      await signIn(provider, { callbackUrl: '/auth/sso-callback' });
     } catch {
-      toast.error(`${label} sign-in failed. Please try again.`);
+      toast.error(`Could not start ${PROVIDER_META[provider].label} sign-in.`);
+      setSubmitting(null);
     }
   };
+
+  const noneConfigured = Array.isArray(providers) && providers.length === 0;
 
   return (
     <main className="main-gradient-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 right-[-10%] h-[480px] w-[480px] rounded-full bg-[#0ea5e9]/10 blur-[120px]"
+        className="pointer-events-none absolute -top-40 right-[-10%] h-[480px] w-[480px] rounded-full bg-[#00d1ff]/10 blur-[120px]"
       />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-[-15%] left-[-8%] h-[420px] w-[420px] rounded-full bg-[#4da8ff]/8 blur-[110px]"
+      />
+
       <div className="relative z-10 w-full max-w-[420px]">
         <div className="mb-6 flex flex-col items-center gap-3">
           <div className="neuro-icon h-14 w-14 rounded-2xl">
@@ -109,107 +114,63 @@ export default function SignupPage() {
         </div>
 
         <div className="glass-panel rounded-2xl p-7 shadow-[0_8px_40px_rgba(0,0,0,0.45)]">
-          <h1 className="headline-md text-card-foreground">Create workspace</h1>
-          <p className="mt-1 body-sm text-muted-foreground">
-            Set up your Agentic RAG environment
+          <h1 className="text-lg font-semibold text-card-foreground">
+            Get started
+          </h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Sign in with your organisation account. Your workspace is created
+            automatically on first access.
           </p>
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={submitting}
-              onClick={() => handleSso('google')}
-              className="gap-2 border-border bg-transparent hover:bg-accent hover:text-accent-foreground"
-            >
-              <GoogleIcon />
-              Google
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={submitting}
-              onClick={() => handleSso('github')}
-              className="gap-2 border-border bg-transparent hover:bg-accent hover:text-accent-foreground"
-            >
-              <GithubIcon />
-              GitHub
-            </Button>
-          </div>
-
-          <div className="my-5 flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              or sign up with email
-            </span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="mt-0 flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="name" className="form-label !mb-0">
-                Name
-              </Label>
-              <Input
-                id="name"
-                required
-                autoComplete="name"
-                placeholder="Ada Lovelace"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="bg-background/60"
-              />
+          {providers === 'loading' ? (
+            <div className="mt-6 flex items-center justify-center py-8">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="sr-only">Loading sign-in options</span>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email" className="form-label !mb-0">
-                Work email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-background/60"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password" className="form-label !mb-0">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete="new-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-background/60"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="mt-1 h-9 w-full font-semibold text-primary-foreground"
+          ) : noneConfigured ? (
+            <div
+              role="alert"
+              className="mt-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4"
             >
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  Creating…
-                </>
-              ) : (
-                'Create account'
-              )}
-            </Button>
-          </form>
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              <div>
+                <p className="text-[13px] font-medium text-amber-200">
+                  Sign-in is not configured on this deployment
+                </p>
+                <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
+                  No identity provider is set up, so accounts cannot be created
+                  yet. Ask an administrator to configure single sign-on.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              {providers.map((provider) => {
+                const { label, icon: Icon } = PROVIDER_META[provider];
+                const busy = submitting === provider;
+                return (
+                  <Button
+                    key={provider}
+                    type="button"
+                    variant="outline"
+                    disabled={submitting !== null}
+                    onClick={() => handleSso(provider)}
+                    className="gap-2 border-border bg-transparent hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Icon />
+                    )}
+                    {label}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
 
-          <p className="mt-5 text-center body-sm text-muted-foreground">
-            Already have an account?{' '}
+          <p className="mt-6 text-center body-sm text-muted-foreground">
+            Already have access?{' '}
             <Link href="/login" className="text-primary hover:underline">
               Sign in
             </Link>
@@ -218,4 +179,4 @@ export default function SignupPage() {
       </div>
     </main>
   );
-}
+}

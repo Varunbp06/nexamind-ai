@@ -1,5 +1,6 @@
 // app/api/proxy/route.js
 import { NextRequest, NextResponse } from 'next/server';
+import { resolvePrincipal } from '@/lib/server/principal';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8682"; 
 
@@ -49,6 +50,21 @@ export async function proxyRequest(request: NextRequest) {
   headers.delete('connection');
   headers.delete('content-length');
   headers.delete('cookie');
+
+  // Resolve the end user from the server-verified NextAuth session.
+  //
+  // This proxy is the single chokepoint in front of the backend, so it is the
+  // only place that may decide who the caller is and which tenant they act on
+  // behalf of. Without this check any anonymous visitor could reach the backend
+  // with the shared-secret token attached and choose their own tenant via the
+  // X-TENANT-ID header.
+  const principal = await resolvePrincipal(request);
+  if (!principal) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Always overwrite, never trust: a caller-supplied X-TENANT-ID is discarded.
+  headers.set('X-TENANT-ID', principal.tenantId);
 
   // Authenticate this server-to-server call when the backend is deployed
   // publicly behind the shared-secret guard (INTERNAL_API_TOKEN).
@@ -113,11 +129,15 @@ export async function proxyRequest(request: NextRequest) {
         }
         body = externalFormData;
         
-        const tenantId = request.headers.get('X-TENANT-ID');
-        headers = new Headers();
-        if (tenantId) {
-          headers.set('X-TENANT-ID', tenantId);
+        // Rebuild headers for the multipart upstream request, but keep the
+        // server-derived tenant and credential. Re-reading the caller's
+        // X-TENANT-ID here would let them select an arbitrary tenant.
+        const multipartHeaders = new Headers();
+        multipartHeaders.set('X-TENANT-ID', principal.tenantId);
+        if (internalToken) {
+          multipartHeaders.set('x-internal-token', internalToken);
         }
+        headers = multipartHeaders;
     } else {
       
       const text = await request.text();
