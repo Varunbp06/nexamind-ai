@@ -176,13 +176,13 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-[11.5px] leading-relaxed text-muted-foreground">
+        <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
           By signing in you agree to the{' '}
-          <Link href="/login" className="text-primary hover:underline">
+          <Link href="/login" className="inline-block py-1 -my-1 text-primary hover:underline">
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link href="/login" className="text-primary hover:underline">
+          <Link href="/login" className="inline-block py-1 -my-1 text-primary hover:underline">
             Privacy Policy
           </Link>
           .

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { proxyRequest } from '@/app/api/proxy';
 import { isStandalone, remove, update } from '../store';
+import { requirePrincipal } from '@/app/api/require-principal';
 
 export async function GET(
   request: NextRequest,
@@ -16,8 +17,10 @@ export async function PUT(
 ) {
   const { id } = await ctx.params;
   if (isStandalone()) {
+    const gate = await requirePrincipal(request);
+    if (gate.response) return gate.response;
     const body = await request.json().catch(() => ({}));
-    const item = update(id, body || {});
+    const item = update(id, body || {}, gate.principal.userId);
     if (!item) return NextResponse.json({ code: 404 }, { status: 404 });
     return NextResponse.json({ code: 200, data: item });
   }
@@ -30,8 +33,10 @@ export async function PATCH(
 ) {
   const { id } = await ctx.params;
   if (isStandalone()) {
+    const gate = await requirePrincipal(request);
+    if (gate.response) return gate.response;
     const body = await request.json().catch(() => ({}));
-    const item = update(id, body || {});
+    const item = update(id, body || {}, gate.principal.userId);
     if (!item) return NextResponse.json({ code: 404 }, { status: 404 });
     return NextResponse.json({ code: 200, data: item });
   }
@@ -44,7 +49,9 @@ export async function DELETE(
 ) {
   const { id } = await ctx.params;
   if (isStandalone()) {
-    remove(id);
+    const gate = await requirePrincipal(request);
+    if (gate.response) return gate.response;
+    remove(id, gate.principal.userId);
     return NextResponse.json({ code: 200 });
   }
   return proxyRequest(request);

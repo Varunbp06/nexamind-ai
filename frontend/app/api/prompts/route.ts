@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import yaml from 'js-yaml';
+import { requirePrincipal } from '@/app/api/require-principal';
 
 /**
  * API route to serve prompts from YAML file
  * Route: /api/prompts
  */
-export async function GET() {
+export async function GET(request: Request) {
+  // This returns the assistant's system prompt verbatim. It must not be
+  // readable by an unauthenticated visitor.
+  const gate = await requirePrincipal(request);
+  if (gate.response) return gate.response;
+
   try {
     // Get the project root directory
     // In Next.js, process.cwd() is the project root (/mnt/ranxia/NexaMind/frontend)

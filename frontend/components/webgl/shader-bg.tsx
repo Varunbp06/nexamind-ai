@@ -158,15 +158,31 @@ export default function ShaderBackground({ className = '' }: { className?: strin
       };
     }
 
+    let running = false;
     const loop = (now: number) => {
-      if (!canvasRef.current) return;
+      if (!running || !canvasRef.current) return;
       drawFrame(gl!, prog, canvasRef.current, (now - start) / 1000);
       raf = requestAnimationFrame(loop);
     };
+    running = true;
     raf = requestAnimationFrame(loop);
 
+    // Don't burn GPU on a backgrounded tab.
+    const handleVisibility = () => {
+      if (document.hidden) {
+        running = false;
+        cancelAnimationFrame(raf);
+      } else if (!running) {
+        running = true;
+        raf = requestAnimationFrame(loop);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
+      running = false;
       cancelAnimationFrame(raf);
+      document.removeEventListener('visibilitychange', handleVisibility);
       gl?.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, []);
