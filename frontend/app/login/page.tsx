@@ -1,15 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { signIn } from 'next-auth/react';
-import { BrainCircuit, Loader2, ShieldAlert } from 'lucide-react';
+import {
+  BrainCircuit,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useDemoSession } from '@/app/providers/demo-session';
+import { DemoProvider } from '@/lib/demo-auth';
 
 type ProviderId = 'google' | 'github';
-type ProvidersState = 'loading' | ProviderId[];
 
 function GoogleIcon() {
   return (
@@ -42,55 +61,101 @@ function GithubIcon() {
   );
 }
 
-const PROVIDER_META: Record<
-  ProviderId,
-  { label: string; icon: () => React.ReactNode }
-> = {
+const PROVIDER_META: Record<ProviderId, { label: string; icon: () => React.ReactNode }> = {
   google: { label: 'Google', icon: GoogleIcon },
   github: { label: 'GitHub', icon: GithubIcon },
 };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REDIRECT_KEY = 'nm_auth_redirect';
+
 export default function LoginPage() {
   const router = useRouter();
-  const [providers, setProviders] = useState<ProvidersState>('loading');
-  const [submitting, setSubmitting] = useState<ProviderId | null>(null);
+  const { status, session, signIn } = useDemoSession();
 
-  // Only offer sign-in methods that this deployment can actually complete.
-  // Anything else would be a dead end, and pretending otherwise is worse than
-  // showing nothing.
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/auth/providers', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : {}))
-      .then((body: Record<string, unknown> | null) => {
-        if (cancelled) return;
-        const available = (Object.keys(body ?? {}) as ProviderId[]).filter(
-          (id) => id in PROVIDER_META,
-        );
-        setProviders(available);
-      })
-      .catch(() => {
-        if (!cancelled) setProviders([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [pendingProvider, setPendingProvider] = useState<ProviderId | null>(null);
+  const [providerBusy, setProviderBusy] = useState<ProviderId | null>(null);
 
-  const handleSso = async (provider: ProviderId) => {
-    setSubmitting(provider);
+  const redirectTarget = () => {
+    let target = '/';
     try {
-      await signIn(provider, { callbackUrl: '/auth/sso-callback' });
-    } catch {
-      toast.error(`Could not start ${PROVIDER_META[provider].label} sign-in.`);
-      setSubmitting(null);
-    }
+      const saved = localStorage.getItem(REDIRECT_KEY);
+      if (saved && saved.startsWith('/') && !saved.startsWith('/login') && !saved.startsWith('/signup')) {
+        target = saved;
+      }
+      localStorage.removeItem(REDIRECT_KEY);
+    } catch {}
+    return target;
   };
 
-  const noneConfigured = Array.isArray(providers) && providers.length === 0;
+  const enterDemo = (provider: DemoProvider, name: string, email?: string) => {
+    signIn(provider, name, email);
+    router.replace(redirectTarget());
+  };
+
+  const handleEmailSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const emailOk = EMAIL_RE.test(email.trim());
+    const passwordOk = password.length > 0;
+    setEmailError(emailOk ? null : email.trim() === '' ? 'Enter your email address.' : 'Enter a valid email address, e.g. name@company.com.');
+    setPasswordError(passwordOk ? null : 'Enter a password to continue the demo.');
+    if (!emailOk || !passwordOk) return;
+
+    setSubmitting(true);
+    const name = email
+      .trim()
+      .split('@')[0]
+      .replace(/[._-]+/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    // Simulated flow only: the password is validated locally and discarded.
+    // It is never transmitted, logged, or stored.
+    window.setTimeout(() => {
+      setSubmitting(false);
+      enterDemo('email', name || 'Demo User', email.trim());
+      toast.success('Signed in to the demo workspace');
+    }, 650);
+  };
+
+  const confirmProvider = (provider: ProviderId) => {
+    setPendingProvider(provider);
+  };
+
+  const runProviderDemo = () => {
+    if (!pendingProvider) return;
+    const p = pendingProvider;
+    setPendingProvider(null);
+    setProviderBusy(p);
+    // Simulated identity only — no real OAuth flow is started.
+    window.setTimeout(() => {
+      setProviderBusy(null);
+      if (p === 'google') {
+        enterDemo('google', 'Demo User', 'demo.google@nexamind.demo');
+      } else {
+        enterDemo('github', 'Demo User', 'demo.github@nexamind.demo');
+      }
+      toast.success(`Entered the demo with a simulated ${PROVIDER_META[p].label} identity`);
+    }, 450);
+  };
+
+  // Already inside a demo session? Straight back into the workspace.
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      router.replace('/');
+    }
+  }, [status, session, router]);
+
+  if (status === 'authenticated' && session) return null;
+
+  const provider = pendingProvider ? PROVIDER_META[pendingProvider] : null;
 
   return (
-    <main className="main-gradient-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+    <main className="main-gradient-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       {/* Ambient glows */}
       <div
         aria-hidden
@@ -114,80 +179,186 @@ export default function LoginPage() {
 
         {/* Glass card */}
         <div className="glass-panel rounded-2xl p-7 shadow-[0_8px_40px_rgba(0,0,0,0.45)]">
-          <h1 className="text-lg font-semibold text-card-foreground">
-            Welcome back
-          </h1>
+          <h1 className="text-lg font-semibold text-card-foreground">Welcome back</h1>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Sign in to your enterprise workspace
+            Enter the interactive NexaMind AI product demo — no account or
+            backend required.
           </p>
 
-          {providers === 'loading' ? (
-            <div className="mt-6 flex items-center justify-center py-8">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              <span className="sr-only">Loading sign-in options</span>
-            </div>
-          ) : noneConfigured ? (
-            <div
-              role="alert"
-              className="mt-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4"
-            >
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-              <div>
-                <p className="text-[13px] font-medium text-amber-200">
-                  Sign-in is not configured on this deployment
-                </p>
-                <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
-                  No identity provider is set up, so there is currently no way
-                  to authenticate. Ask an administrator to configure single
-                  sign-on for this workspace.
-                </p>
+          {/* Email / password demo sign-in */}
+          <form onSubmit={handleEmailSubmit} noValidate className="mt-6 space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="demo-email" className="text-[13px] font-medium">
+                Email address
+              </Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+                <Input
+                  id="demo-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError(null);
+                  }}
+                  aria-invalid={emailError ? true : undefined}
+                  aria-describedby={emailError ? 'demo-email-error' : undefined}
+                  className="h-11 pl-9"
+                />
               </div>
+              {emailError && (
+                <p id="demo-email-error" role="alert" className="text-[12px] text-red-400">
+                  {emailError}
+                </p>
+              )}
             </div>
-          ) : (
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              {providers.map((provider) => {
-                const { label, icon: Icon } = PROVIDER_META[provider];
-                const busy = submitting === provider;
+
+            <div className="space-y-1.5">
+              <Label htmlFor="demo-password" className="text-[13px] font-medium">
+                Password
+              </Label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+                <Input
+                  id="demo-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Any password — this is a demo"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError(null);
+                  }}
+                  aria-invalid={passwordError ? true : undefined}
+                  aria-describedby={passwordError ? 'demo-password-error' : undefined}
+                  className="h-11 pl-9 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground/70 transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {passwordError && (
+                <p id="demo-password-error" role="alert" className="text-[12px] text-red-400">
+                  {passwordError}
+                </p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="h-11 w-full gap-2 text-[14px] font-semibold"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Entering demo…
+                </>
+              ) : (
+                <>Enter demo workspace</>
+              )}
+            </Button>
+          </form>
+
+          {/* Demo disclosure */}
+          <div className="mt-4 flex gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
+              <span className="font-medium text-card-foreground">Simulated sign-in.</span>{' '}
+              No account is created, no credentials are transmitted, and the
+              password is never stored. This is a frontend-only product demo.
+            </p>
+          </div>
+
+          {/* Provider demo options */}
+          <div className="mt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
+                or continue with
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {(Object.keys(PROVIDER_META) as ProviderId[]).map((id) => {
+                const { label, icon: Icon } = PROVIDER_META[id];
+                const busy = providerBusy === id;
                 return (
                   <Button
-                    key={provider}
+                    key={id}
                     type="button"
                     variant="outline"
-                    disabled={submitting !== null}
-                    onClick={() => handleSso(provider)}
-                    className="gap-2 border-border bg-transparent hover:bg-accent hover:text-accent-foreground"
+                    disabled={providerBusy !== null}
+                    onClick={() => confirmProvider(id)}
+                    className="relative gap-2 border-border bg-transparent hover:bg-accent hover:text-accent-foreground"
                   >
-                    {busy ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Icon />
-                    )}
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon />}
                     {label}
+                    <span className="absolute -top-1.5 right-2 rounded-full bg-primary/15 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-primary">
+                      Demo
+                    </span>
                   </Button>
                 );
               })}
             </div>
-          )}
+          </div>
 
-          <p className="mt-6 text-center body-sm text-muted-foreground">
-            NexaMind AI uses single sign-on. Contact your administrator if your
-            organisation account is not recognised.
+          <p className="mt-6 text-center text-[13px] text-muted-foreground">
+            New to the demo?{' '}
+            <Link href="/signup" className="text-primary hover:underline">
+              Create a demo account
+            </Link>
+          </p>
+
+          <p className="mt-4 text-center text-xs leading-relaxed text-muted-foreground">
+            <Sparkles className="mr-1 inline h-3 w-3 align-[-2px]" />
+            NexaMind AI — interactive enterprise RAG demo. Demo sessions are
+            local to this browser tab.
           </p>
         </div>
-
-        {/* Footer */}
-        <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
-          By signing in you agree to the{' '}
-          <Link href="/login" className="inline-block py-1 -my-1 text-primary hover:underline">
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link href="/login" className="inline-block py-1 -my-1 text-primary hover:underline">
-            Privacy Policy
-          </Link>
-          .
-        </p>
       </div>
+
+      {/* Provider confirmation dialog */}
+      <Dialog
+        open={pendingProvider !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingProvider(null);
+        }}
+      >
+        <DialogContent className="glass-panel max-w-sm rounded-2xl border-border p-6">
+          <DialogHeader>
+            <DialogTitle className="text-[15px] font-semibold text-card-foreground">
+              {provider ? `Continue with ${provider.label} demo?` : ''}
+            </DialogTitle>
+            <DialogDescription className="text-[13px] leading-relaxed text-muted-foreground">
+              This enters a <span className="font-medium text-card-foreground">simulated {provider?.label} identity</span>{' '}
+              for the demo. No real {provider?.label} account is contacted, and
+              no external authentication request is made.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPendingProvider(null)}
+              className="border-border bg-transparent"
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={runProviderDemo} className="gap-2">
+              {provider ? <provider.icon /> : null}
+              Continue with {provider?.label} demo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
-}
+}

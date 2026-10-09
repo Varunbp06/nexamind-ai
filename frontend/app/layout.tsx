@@ -12,6 +12,7 @@ import { ChatProvider } from './providers/chat';
 import { TenantProvider } from './providers/tenant';
 import { I18nProvider } from './providers/i18n';
 import { AuthSessionProvider } from './providers/session';
+import { DemoSessionProvider } from './providers/demo-session';
 import { Toaster } from '@/components/ui/sonner';
 
 const geistSans = Geist({ variable: '--font-geist', subsets: ['latin'] });
@@ -41,6 +42,7 @@ export default function RootLayout({
       </head>
       <body>
         <AuthSessionProvider>
+        <DemoSessionProvider>
         <I18nProvider>
           <TenantProvider>
             <ChatProvider>
@@ -55,6 +57,7 @@ export default function RootLayout({
             </ChatProvider>
           </TenantProvider>
         </I18nProvider>
+        </DemoSessionProvider>
         </AuthSessionProvider>
       </body>
     </html>

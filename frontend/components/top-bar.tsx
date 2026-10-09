@@ -30,6 +30,7 @@ import {
 import { ThreadList } from '@/components/assistant-ui/thread-list';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { HEADER_SLOT_ID } from '@/components/header-portal';
+import { useDemoSession } from '@/app/providers/demo-session';
 
 const CRUMBS: [string, string][] = [
   ['/knowledgebases', 'Knowledge Bases'],
@@ -88,6 +89,7 @@ function IconBtn({
 export function TopBar() {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
+  const { session: demoSession, signOut: demoSignOut } = useDemoSession();
   const [threadsOpen, setThreadsOpen] = useState(false);
   const [sessionEmail, setSessionEmail] = useState('');
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
@@ -102,16 +104,27 @@ export function TopBar() {
 
   useEffect(() => {
     try {
+      // Prefer the active demo session; fall back to legacy state.
       const raw = localStorage.getItem('nm_session');
-      if (raw) setSessionEmail(JSON.parse(raw)?.email ?? '');
+      if (raw && !demoSession?.email) setSessionEmail(JSON.parse(raw)?.email ?? '');
+      else if (demoSession?.email) setSessionEmail(demoSession.email);
       const ws = localStorage.getItem('nm_workspace');
       if (ws) setWorkspace(ws);
     } catch {}
-  }, []);
+  }, [demoSession?.email]);
 
   // Infra status probe
   useEffect(() => {
     let alive = true;
+    if (demoSession) {
+      // Frontend demo mode: no live chat backend by design. Report the
+      // simulated engine as the current, disclosed status.
+      setBackendOk(true);
+      setModelName('Demo (simulated)');
+      return () => {
+        alive = false;
+      };
+    }
     fetch('/api/config/llms/groups')
       .then((r) => r.json())
       .then((j) => {
@@ -124,7 +137,7 @@ export function TopBar() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [demoSession]);
 
   // Recent activity for notifications
   useEffect(() => {
@@ -176,6 +189,9 @@ export function TopBar() {
 
   const signOut = async () => {
     try {
+      demoSignOut();
+    } catch {}
+    try {
       localStorage.removeItem('nm_session');
     } catch {}
     try {
@@ -203,6 +219,14 @@ export function TopBar() {
         <span className="label-caps text-on-surface-variant uppercase truncate">
           {crumbFor(pathname)}
         </span>
+        {demoSession && (
+          <span
+            title="Frontend demo mode — no live backend"
+            className="ml-1 shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary"
+          >
+            Demo mode
+          </span>
+        )}
         <div
           id={HEADER_SLOT_ID}
           className="flex-1 min-w-0 items-center gap-3 pl-4 hidden lg:flex"
@@ -335,9 +359,19 @@ export function TopBar() {
               <div className="flex items-center justify-between">
                 <span className="text-on-surface-variant">RAG backend</span>
                 <span className="text-muted-foreground !text-[12px]">
-                  Set NEXT_PUBLIC_BACKEND_URL
+                  {demoSession ? (
+                    'Local demo (simulated)'
+                  ) : (
+                    'Set NEXT_PUBLIC_BACKEND_URL'
+                  )}
                 </span>
               </div>
+              {demoSession && (
+                <p className="!text-[11px] leading-relaxed text-muted-foreground">
+                  Demo mode: chat responses are simulated locally. No external
+                  services are contacted.
+                </p>
+              )}
             </div>
           </PopoverContent>
         </Popover>

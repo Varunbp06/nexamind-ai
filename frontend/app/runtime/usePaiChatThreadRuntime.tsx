@@ -27,6 +27,7 @@ import { UploadAttachmentAdapter } from '../attachments/upload_attachment_adapte
 import { v4 as uuidv4 } from 'uuid';
 import { AssistantStream, PlainTextDecoder } from "assistant-stream";
 import { useTenantFetch } from '@/hooks/use-tenant-fetch';
+import { buildDemoChatResponse } from '@/lib/demo-chat';
 
 // Token usage context for tracking message token counts
 export interface TokenUsage {
@@ -193,7 +194,13 @@ export class MyModelAdapter implements ChatModelAdapter {
     );
 
     const fetchFn = this.options.tenantFetch ?? fetch;
-    const result = await fetchFn(this.options.api, {
+    // Frontend demo mode: short-circuit to a local simulated SSE stream so
+    // the chat experience works without any backend. Real deployments with a
+    // live backend are unaffected.
+    const demoResponse = buildDemoChatResponse(abortSignal);
+    const result =
+      demoResponse ??
+      (await fetchFn(this.options.api, {
       method: 'POST',
       headers,
       credentials: this.options.credentials ?? 'same-origin',
@@ -208,7 +215,7 @@ export class MyModelAdapter implements ChatModelAdapter {
         stream: true,
       }),
       signal: abortSignal,
-    });
+    }));
 
     await this.options.onResponse?.(result);
     if (!result.ok) {
