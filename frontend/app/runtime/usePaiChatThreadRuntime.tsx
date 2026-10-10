@@ -29,6 +29,7 @@ import { AssistantStream, PlainTextDecoder } from "assistant-stream";
 import { useTenantFetch } from '@/hooks/use-tenant-fetch';
 import { fetchDemoChatResponse, buildDemoChatResponse } from '@/lib/demo-chat';
 import { isDemoSessionActive } from '@/lib/demo-auth';
+import { useDemoSession } from '@/app/providers/demo-session';
 
 // Token usage context for tracking message token counts
 export interface TokenUsage {
@@ -786,9 +787,16 @@ export const usePaiChatThreadRuntime = (options: PaiChatRuntimeOptions) => {
   // load chat options
   const { model, enable_agent, enable_search, enable_chatdb, mcp_ids, kb_ids, user_id } = useChatOptions();
   const { tenantFetch } = useTenantFetch();
+  // Recreate the thread adapter when the demo session appears/disappears: the
+  // runtime mounts before sign-in (it wraps the whole app), so without this
+  // dependency it would keep the session-gated remote adapter forever and
+  // every thread call would 401 in demo mode.
+  const { session: demoSession } = useDemoSession();
 
-  
-  const databaseAdapter = useMemo(() => createDatabaseAdapter(tenantFetch), [tenantFetch]);
+  const databaseAdapter = useMemo(
+    () => createDatabaseAdapter(tenantFetch),
+    [tenantFetch, demoSession],
+  );
 
   const runtime = useRemoteThreadListRuntime({
     runtimeHook: () => {
