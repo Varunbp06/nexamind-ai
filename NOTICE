@@ -1,0 +1,42 @@
+NexaMind AI — NOTICE
+====================
+
+Copyright (c) 2026 Varun B P — NexaMind AI
+Maintainer: Varun B P — https://github.com/Varunbp06
+
+This repository is built on the open-source PAI-RAG project, with additions made
+for NexaMind AI. The sections below identify which is which.
+
+## Upstream project (Copyright (c) 2025 PAI-RAG Contributors)
+
+NexaMind AI is built on PAI-RAG by aigc-apps (https://github.com/aigc-apps/PAI-RAG),
+used under the MIT License. The PAI-RAG copyright notice is retained in LICENSE.
+The following components are derived from PAI-RAG and are NOT original to NexaMind AI:
+
+- `backend/` — the FastAPI application, RAG pipeline, model / tool / agent services,
+  configuration APIs, database models, and the Alembic migrations (`alembic/`)
+- `frontend/` — the Next.js application, based on PAI-RAG's frontend
+- `integrations/pairag-file/` — the PAI-RAG file processing library (v2.1.38)
+- `skills/pairag-knowledge/` — the PAI-RAG knowledge-base CLI search skill
+- `tests/`, `resources/`, `scripts/`, `examples/`, `docker/`, `Makefile`,
+  `pyproject.toml`, `alembic.ini` — derived from or adapted from PAI-RAG
+
+A small number of files carry their own upstream notices. For example,
+`backend/extensions/trace/*.py` is "Copyright The OpenTelemetry Authors", and the
+`integrations/pairag-file` tokenizer resources are third-party model assets.
+
+## NexaMind AI additions (Copyright (c) 2026 Varun B P)
+
+- NexaMind AI branding, README, and user-facing documentation
+- The NexaMind AI frontend experience and UI additions layered on the PAI-RAG
+  frontend, including the authentication and authorization work —
+  `frontend/app/api/auth/`, `frontend/app/api/require-principal.ts`,
+  `frontend/lib/auth.ts`, `frontend/app/login/`, `frontend/app/signup/`,
+  `frontend/app/auth/sso-callback/`
+- NexaMind AI-specific deployment configuration and guides — `DEPLOY.md`,
+  `render.yaml`, and the `Dockerfile*` variants for hosting targets
+
+## Third-party dependencies
+
+All npm and Python dependencies retain their own licenses and notices.
+Run `npm ls` and `poetry show` in the respective directories for full lists.
