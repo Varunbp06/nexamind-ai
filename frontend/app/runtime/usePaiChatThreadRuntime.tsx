@@ -28,6 +28,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AssistantStream, PlainTextDecoder } from "assistant-stream";
 import { useTenantFetch } from '@/hooks/use-tenant-fetch';
 import { fetchDemoChatResponse, buildDemoChatResponse } from '@/lib/demo-chat';
+import { isDemoSessionActive } from '@/lib/demo-auth';
 
 // Token usage context for tracking message token counts
 export interface TokenUsage {
@@ -496,6 +497,33 @@ export class MyModelAdapter implements ChatModelAdapter {
 }
 
 function createDatabaseAdapter(tenantFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>): unstable_RemoteThreadListAdapter {
+  // Frontend demo mode: no NextAuth principal, so /api/threads (session-gated
+  // by requirePrincipal) would reject every call. Substitute a local synthetic
+  // thread adapter — thread CRUD stays in-memory, the empty list is shown, and
+  // only the model call goes to the server (/api/chat/demo). Real sessions are
+  // unaffected.
+  if (typeof window !== 'undefined' && isDemoSessionActive()) {
+    return {
+      async list() {
+        return { threads: [] };
+      },
+      async initialize() {
+        const id = `demo-${uuidv4()}`;
+        initializedThreadId = id;
+        return { remoteId: id, externalId: id };
+      },
+      async rename() {},
+      async archive() {},
+      async unarchive() {},
+      async delete() {},
+      async generateTitle() {
+        return AssistantStream.fromByteStream(
+          toByteStream('Demo chat') as ReadableStream<Uint8Array<ArrayBuffer>>,
+          new PlainTextDecoder(),
+        );
+      },
+    };
+  }
   return {
     async list() {
       try {
@@ -616,6 +644,10 @@ export const StableProvider: React.ComponentType<{ children?: React.ReactNode }>
   const history = useMemo<ThreadHistoryAdapter>(
     () => ({
       async load() {
+        // Demo mode: no server thread store — start with an empty local thread.
+        if (typeof window !== 'undefined' && isDemoSessionActive()) {
+          return { headId: null, messages: [] };
+        }
         if (!remoteId) return { headId: null, messages: [] };
         
         try {
@@ -667,6 +699,11 @@ export const StableProvider: React.ComponentType<{ children?: React.ReactNode }>
         }
       },
       async append(message) {
+        // Demo mode: no server thread store — skip persistence (history is
+        // kept in the in-memory runtime for the session).
+        if (typeof window !== 'undefined' && isDemoSessionActive()) {
+          return;
+        }
         if (!remoteId) {
           console.warn('Cannot save message - thread not initialized');
           while (isInitializing) {
