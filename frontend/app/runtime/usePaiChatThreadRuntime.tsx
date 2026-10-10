@@ -27,7 +27,7 @@ import { UploadAttachmentAdapter } from '../attachments/upload_attachment_adapte
 import { v4 as uuidv4 } from 'uuid';
 import { AssistantStream, PlainTextDecoder } from "assistant-stream";
 import { useTenantFetch } from '@/hooks/use-tenant-fetch';
-import { buildDemoChatResponse } from '@/lib/demo-chat';
+import { fetchDemoChatResponse, buildDemoChatResponse } from '@/lib/demo-chat';
 
 // Token usage context for tracking message token counts
 export interface TokenUsage {
@@ -194,28 +194,32 @@ export class MyModelAdapter implements ChatModelAdapter {
     );
 
     const fetchFn = this.options.tenantFetch ?? fetch;
-    // Frontend demo mode: short-circuit to a local simulated SSE stream so
-    // the chat experience works without any backend. Real deployments with a
-    // live backend are unaffected.
-    const demoResponse = buildDemoChatResponse(abortSignal);
+    // Frontend demo mode: try the server-side demo route first (real
+    // provider-backed answer when LLM_API_KEY is configured), and only fall
+    // back to the local clearly-labelled simulated SSE stream when no
+    // provider is available. Real deployments with a live backend and a real
+    // NextAuth session are unaffected (demo path returns null for them).
+    const payload = JSON.stringify({
+      system: context.system,
+      messages: messages,
+      tools: [],
+      runConfig,
+      ...context.callSettings,
+      ...context.config,
+      ...this.options.body,
+      stream: true,
+    });
+    const demoResponse = await fetchDemoChatResponse(payload, headers, abortSignal);
     const result =
       demoResponse ??
+      buildDemoChatResponse(abortSignal) ??
       (await fetchFn(this.options.api, {
-      method: 'POST',
-      headers,
-      credentials: this.options.credentials ?? 'same-origin',
-      body: JSON.stringify({
-        system: context.system,
-        messages: messages,
-        tools: [],
-        runConfig,
-        ...context.callSettings,
-        ...context.config,
-        ...this.options.body,
-        stream: true,
-      }),
-      signal: abortSignal,
-    }));
+        method: 'POST',
+        headers,
+        credentials: this.options.credentials ?? 'same-origin',
+        body: payload,
+        signal: abortSignal,
+      }));
 
     await this.options.onResponse?.(result);
     if (!result.ok) {
