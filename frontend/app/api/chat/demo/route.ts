@@ -33,6 +33,29 @@ const DEFAULT_MODEL = process.env.LLM_MODEL || 'nvidia/nemotron-3.5-lightning-30
 const MAX_TOKENS_CAP = 1024;
 const MAX_MESSAGES = 60;
 
+/**
+ * Normalize an assistant-ui / OpenAI message `content` into a plain string.
+ * assistant-ui sends content as an array of parts (e.g. [{type:'text',text}])
+ * for user messages; coerce that to a single text string so the model receives
+ * the actual question instead of an empty string.
+ */
+function extractAssistantContent(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (typeof content === 'number') return String(content);
+  if (Array.isArray(content)) {
+    return content
+      .map((part: any) => {
+        if (!part || typeof part !== 'object') return '';
+        if (typeof part.text === 'string') return part.text;
+        if (typeof part.content === 'string') return part.content;
+        return '';
+      })
+      .join('\n')
+      .trim();
+  }
+  return '';
+}
+
 // Per-IP sliding-window rate limit (in-memory, best-effort).
 const RATE_LIMIT_PER_MINUTE = 12;
 const WINDOW_MS = 60_000;
@@ -82,12 +105,7 @@ export async function POST(request: NextRequest) {
   const rawMessages = Array.isArray(body.messages) ? body.messages : [];
   const messages = rawMessages.slice(0, MAX_MESSAGES).map((m: any) => ({
     role: m?.role === 'assistant' || m?.role === 'user' ? m.role : 'user',
-    content:
-      typeof m?.content === 'string'
-        ? m.content
-        : typeof m?.content === 'number'
-          ? String(m.content)
-          : '',
+    content: extractAssistantContent(m?.content),
   }));
   if (typeof body.system === 'string' && body.system.trim()) {
     messages.unshift({ role: 'system', content: body.system.trim() });
