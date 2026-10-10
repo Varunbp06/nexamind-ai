@@ -27,6 +27,9 @@ import { UploadAttachmentAdapter } from '../attachments/upload_attachment_adapte
 import { v4 as uuidv4 } from 'uuid';
 import { AssistantStream, PlainTextDecoder } from "assistant-stream";
 import { useTenantFetch } from '@/hooks/use-tenant-fetch';
+import { fetchDemoChatResponse, buildDemoChatResponse } from '@/lib/demo-chat';
+import { isDemoSessionActive } from '@/lib/demo-auth';
+import { useDemoSession } from '@/app/providers/demo-session';
 
 // Token usage context for tracking message token counts
 export interface TokenUsage {
@@ -193,22 +196,32 @@ export class MyModelAdapter implements ChatModelAdapter {
     );
 
     const fetchFn = this.options.tenantFetch ?? fetch;
-    const result = await fetchFn(this.options.api, {
-      method: 'POST',
-      headers,
-      credentials: this.options.credentials ?? 'same-origin',
-      body: JSON.stringify({
-        system: context.system,
-        messages: messages,
-        tools: [],
-        runConfig,
-        ...context.callSettings,
-        ...context.config,
-        ...this.options.body,
-        stream: true,
-      }),
-      signal: abortSignal,
+    // Frontend demo mode: try the server-side demo route first (real
+    // provider-backed answer when LLM_API_KEY is configured), and only fall
+    // back to the local clearly-labelled simulated SSE stream when no
+    // provider is available. Real deployments with a live backend and a real
+    // NextAuth session are unaffected (demo path returns null for them).
+    const payload = JSON.stringify({
+      system: context.system,
+      messages: messages,
+      tools: [],
+      runConfig,
+      ...context.callSettings,
+      ...context.config,
+      ...this.options.body,
+      stream: true,
     });
+    const demoResponse = await fetchDemoChatResponse(payload, headers, abortSignal);
+    const result =
+      demoResponse ??
+      buildDemoChatResponse(abortSignal) ??
+      (await fetchFn(this.options.api, {
+        method: 'POST',
+        headers,
+        credentials: this.options.credentials ?? 'same-origin',
+        body: payload,
+        signal: abortSignal,
+      }));
 
     await this.options.onResponse?.(result);
     if (!result.ok) {
@@ -485,6 +498,33 @@ export class MyModelAdapter implements ChatModelAdapter {
 }
 
 function createDatabaseAdapter(tenantFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>): unstable_RemoteThreadListAdapter {
+  // Frontend demo mode: no NextAuth principal, so /api/threads (session-gated
+  // by requirePrincipal) would reject every call. Substitute a local synthetic
+  // thread adapter — thread CRUD stays in-memory, the empty list is shown, and
+  // only the model call goes to the server (/api/chat/demo). Real sessions are
+  // unaffected.
+  if (typeof window !== 'undefined' && isDemoSessionActive()) {
+    return {
+      async list() {
+        return { threads: [] };
+      },
+      async initialize() {
+        const id = `demo-${uuidv4()}`;
+        initializedThreadId = id;
+        return { remoteId: id, externalId: id };
+      },
+      async rename() {},
+      async archive() {},
+      async unarchive() {},
+      async delete() {},
+      async generateTitle() {
+        return AssistantStream.fromByteStream(
+          toByteStream('Demo chat') as ReadableStream<Uint8Array<ArrayBuffer>>,
+          new PlainTextDecoder(),
+        );
+      },
+    };
+  }
   return {
     async list() {
       try {
@@ -605,6 +645,10 @@ export const StableProvider: React.ComponentType<{ children?: React.ReactNode }>
   const history = useMemo<ThreadHistoryAdapter>(
     () => ({
       async load() {
+        // Demo mode: no server thread store — start with an empty local thread.
+        if (typeof window !== 'undefined' && isDemoSessionActive()) {
+          return { headId: null, messages: [] };
+        }
         if (!remoteId) return { headId: null, messages: [] };
         
         try {
@@ -656,6 +700,11 @@ export const StableProvider: React.ComponentType<{ children?: React.ReactNode }>
         }
       },
       async append(message) {
+        // Demo mode: no server thread store — skip persistence (history is
+        // kept in the in-memory runtime for the session).
+        if (typeof window !== 'undefined' && isDemoSessionActive()) {
+          return;
+        }
         if (!remoteId) {
           console.warn('Cannot save message - thread not initialized');
           while (isInitializing) {
@@ -738,9 +787,16 @@ export const usePaiChatThreadRuntime = (options: PaiChatRuntimeOptions) => {
   // load chat options
   const { model, enable_agent, enable_search, enable_chatdb, mcp_ids, kb_ids, user_id } = useChatOptions();
   const { tenantFetch } = useTenantFetch();
+  // Recreate the thread adapter when the demo session appears/disappears: the
+  // runtime mounts before sign-in (it wraps the whole app), so without this
+  // dependency it would keep the session-gated remote adapter forever and
+  // every thread call would 401 in demo mode.
+  const { session: demoSession } = useDemoSession();
 
-  
-  const databaseAdapter = useMemo(() => createDatabaseAdapter(tenantFetch), [tenantFetch]);
+  const databaseAdapter = useMemo(
+    () => createDatabaseAdapter(tenantFetch),
+    [tenantFetch, demoSession],
+  );
 
   const runtime = useRemoteThreadListRuntime({
     runtimeHook: () => {
