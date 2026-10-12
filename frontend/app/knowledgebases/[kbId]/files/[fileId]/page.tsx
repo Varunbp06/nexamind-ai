@@ -618,6 +618,7 @@ function ChunkCard({ chunk, index, onToggle, onEdit, onDelete, t }: ChunkCardPro
               <PhotoView src={meta.url}>
                 <img
                   src={meta.url}
+                  alt={meta.desc || t('knowledgebase.imageDesc')}
                   className="w-7 h-7 rounded object-cover cursor-pointer"
                 />
               </PhotoView>

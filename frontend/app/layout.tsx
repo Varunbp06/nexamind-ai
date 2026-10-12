@@ -22,8 +22,35 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'NexaMind AI',
-  description: 'NexaMind AI — enterprise RAG workspace.',
+  metadataBase: new URL('https://nexamind-ai.vercel.app'),
+  title: {
+    default: 'NexaMind AI — Agentic RAG Workspace',
+    template: '%s · NexaMind AI',
+  },
+  description:
+    'NexaMind AI — enterprise Agentic RAG workspace. Converse with agents, upload documents, build knowledge bases, and grade answer quality. Interactive product demo.',
+  applicationName: 'NexaMind AI',
+  keywords: [
+    'NexaMind',
+    'AI',
+    'RAG',
+    'retrieval augmented generation',
+    'knowledge base',
+    'agentic workspace',
+  ],
+  openGraph: {
+    type: 'website',
+    title: 'NexaMind AI — Agentic RAG Workspace',
+    description:
+      'Conversational AI workspace with knowledge bases, apps, and answer evaluation.',
+    siteName: 'NexaMind AI',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'NexaMind AI — Agentic RAG Workspace',
+    description:
+      'Conversational AI workspace with knowledge bases, apps, and answer evaluation.',
+  },
 };
 
 export default function RootLayout({

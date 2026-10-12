@@ -71,6 +71,7 @@ function RailButton({
   const inner = (
     <>
       <svg
+        aria-hidden="true"
         viewBox="0 0 24 24"
         fill={active ? 'currentColor' : 'none'}
         stroke="currentColor"

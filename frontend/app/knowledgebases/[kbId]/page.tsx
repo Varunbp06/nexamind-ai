@@ -3241,6 +3241,7 @@ export default function KnowledgeBaseDetailPage(
                             previewFile?.file_extension === '.jpeg' ? (
                             <img
                               src={previewFile?.file_metadata?.file_url}
+                              alt={t('knowledgebase.imagePreview')}
                               width="100%"
                               height="100%"
                               title={t('knowledgebase.imagePreview')}
@@ -3705,6 +3706,7 @@ export default function KnowledgeBaseDetailPage(
                                   <PhotoView key={index} src={meta.url}>
                                     <img
                                       src={meta.url}
+                                      alt={meta.desc || t('knowledgebase.imageDesc')}
                                       className="w-8 h-8 object-cover rounded-md cursor-pointer"
                                     />
                                   </PhotoView>
