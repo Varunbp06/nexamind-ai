@@ -251,3 +251,5 @@ debug/
 .claude/
 .agent/
 graphify-out/
+.vercel
+.env*

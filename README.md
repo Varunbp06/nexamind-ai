@@ -13,6 +13,8 @@ Chat with your documents. Build AI agents. Evaluate answers. All in one workspac
 ![React](https://img.shields.io/badge/React-19-61dafb)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)
+[![Live](https://img.shields.io/badge/Live-nexamindai.vercel.app-22c55e?style=flat-square)](https://nexamindai.vercel.app)
+[![Mirror](https://img.shields.io/badge/Mirror-nexamindapp.vercel.app-0ea5e9?style=flat-square)](https://nexamindapp.vercel.app)
 
 </div>
 
