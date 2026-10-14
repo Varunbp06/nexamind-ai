@@ -89,3 +89,5 @@ Built on top of the open-source **PAI-RAG** project by
 architecture and agent capabilities credit the PAI-RAG contributors; the
 NexaMind AI frontend experience, branding, and deployment configuration were
 built on that foundation.
+
+**Developer and maintainer:** Varun B P · [GitHub](https://github.com/Varunbp06)
