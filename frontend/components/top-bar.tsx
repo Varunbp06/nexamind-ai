@@ -303,7 +303,7 @@ export function TopBar() {
             </div>
             {notifThreads.length === 0 ? (
               <div className="p-4 body-sm text-muted-foreground">
-                You're all caught up.
+                You&apos;re all caught up.
               </div>
             ) : (
               <div className="py-1">

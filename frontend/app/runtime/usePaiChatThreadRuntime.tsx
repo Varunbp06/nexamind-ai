@@ -799,7 +799,7 @@ export const usePaiChatThreadRuntime = (options: PaiChatRuntimeOptions) => {
   );
 
   const runtime = useRemoteThreadListRuntime({
-    runtimeHook: () => {
+    runtimeHook: function useRuntimeHook() {
       useThreadListItem(); // keep the hook call to scope the runtime to the thread item
       // NOTE: assistant-ui owns conversation history (persisted via /api/threads
       // and sent in `messages`). We intentionally do NOT send session_id, so the

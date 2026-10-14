@@ -220,7 +220,7 @@ const WebSearchResults: FC<{ items: SearchWebResult['result'] }> = ({ items }) =
 
 export const TavilySearchToolUI = makeAssistantToolUI<SearchWebArgs, string>({
   toolName: 'tavily-websearch',
-  render: ({ args, status, result, isError }) => {
+  render: function TavilySearchToolUIRender({ args, status, result, isError }) {
     const { t } = useI18n();
 
     if (status.type === 'running') {
@@ -273,7 +273,7 @@ type ChatDbResult = {
 
 export const ChatDbToolUI = makeAssistantToolUI<ChatDbArgs, string>({
   toolName: 'chat-db',
-  render: ({ args, status, result, isError }) => {
+  render: function ChatDbToolUIRender({ args, status, result, isError }) {
     const { t } = useI18n();
 
     if (status.type === 'running') {
@@ -321,7 +321,7 @@ export const ChatDbToolUI = makeAssistantToolUI<ChatDbArgs, string>({
 
 export const PlanningToolUI = makeAssistantToolUI<SearchWebArgs, string>({
   toolName: 'planning-tool',
-  render: ({ args, status, result, isError }) => {
+  render: function PlanningToolUIRender({ args, status, result, isError }) {
     const { t } = useI18n();
 
     if (status.type === 'running') {
@@ -382,7 +382,7 @@ export const PlanningToolUI = makeAssistantToolUI<SearchWebArgs, string>({
 
 export const SearchWebToolUI = makeAssistantToolUI<SearchWebArgs, string>({
   toolName: 'aliyun-websearch',
-  render: ({ args, status, result, isError }) => {
+  render: function SearchWebToolUIRender({ args, status, result, isError }) {
     const { t } = useI18n();
 
     if (status.type === 'running') {
@@ -433,7 +433,7 @@ export type ReadFileToolArgs = {
 
 export const ReadFileToollUI = makeAssistantToolUI<ReadFileToolArgs, string>({
   toolName: 'read-file',
-  render: ({ args, status, result, isError }) => {
+  render: function ReadFileToollUIRender({ args, status, result, isError }) {
     const { t } = useI18n();
 
     if (status.type === 'running') {
@@ -469,7 +469,7 @@ export type SearchFileToolArgs = {
 
 export const SearchFileToollUI = makeAssistantToolUI<SearchFileToolArgs, string>({
   toolName: 'search-file',
-  render: ({ args, status, result, isError }) => {
+  render: function SearchFileToollUIRender({ args, status, result, isError }) {
     const { t } = useI18n();
 
     if (status.type === 'running') {
@@ -519,7 +519,7 @@ type SearchKbResult = {
 
 export const SearchKbToolUI = makeAssistantToolUI<SearchKbArgs, string>({
   toolName: 'search-knowledgebase',
-  render: ({ args, status, result, isError }) => {
+  render: function SearchKbToolUIRender({ args, status, result, isError }) {
     const { t } = useI18n();
 
     if (status.type === 'running') {
@@ -652,7 +652,7 @@ export type PythonInterpreterArgs = {
 
 export const PythonInterpreterToolUI = makeAssistantToolUI<PythonInterpreterArgs, string>({
   toolName: 'PythonInterpreter',
-  render: ({ args, status, result, isError }) => {
+  render: function PythonInterpreterToolUIRender({ args, status, result, isError }) {
     const { t } = useI18n();
     const [open, setOpen] = useState(false);
     const [savedCode, setSavedCode] = useState('');

@@ -43,7 +43,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             </p>
           ),
           
-          code({ node, className, children, ...props }) {
+          code: function CodeBlock({ node, className, children, ...props }) {
             
             const match = /language-(\w+)/.exec(className || "");
             const language = match?.[1] || "text";
